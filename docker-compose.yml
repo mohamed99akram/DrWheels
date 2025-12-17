@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: drwheels-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: drwheels
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - drwheels-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: drwheels-backend
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongodb:27017/drwheels
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - CORS_ORIGIN=http://localhost:3000
+    depends_on:
+      - mongodb
+    networks:
+      - drwheels-network
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: drwheels-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:4000/api
+    depends_on:
+      - backend
+    networks:
+      - drwheels-network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  mongodb_data:
+
+networks:
+  drwheels-network:
+    driver: bridge

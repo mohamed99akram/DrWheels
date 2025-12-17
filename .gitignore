@@ -1,0 +1,32 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Dependencies (already in component .gitignore files)
+# node_modules/
+# .dart_tool/
+
+# Build outputs
+dist/
+build/
+*.apk
+*.ipa
+
+# Docker
+docker-compose.override.yml
