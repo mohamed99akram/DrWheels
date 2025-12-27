@@ -13,14 +13,18 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.16.0"
   },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-security": "^1.7.1",
+    "react-scripts": "^5.0.1"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "devDependencies": {
-    "react-scripts": "^5.0.1"
+    "lint": "eslint src",
+    "audit": "npm audit"
   },
   "browserslist": {
     "production": [
