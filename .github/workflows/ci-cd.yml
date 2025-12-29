@@ -113,7 +113,7 @@ jobs:
           
           # Clone the GitOps repo
           git clone https://${{ secrets.WHEELOPS_TOKEN }}@github.com/mohamed99akram/wheelops.git
-          cd YOUR_GITOPS_REPO
+          cd wheelops
           
           # Update backend image tag
           sed -i "s|image: .*/backend:.*|image: ${{ secrets.DOCKER_REGISTRY }}/backend:${{ github.sha }}|g" drwheels/backend-deployment.yaml
