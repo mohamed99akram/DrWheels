@@ -23,6 +23,7 @@ exports.register = async (req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
+    // TODO use a ready-made IdP
     res.status(201).json({
       token,
       user: {
