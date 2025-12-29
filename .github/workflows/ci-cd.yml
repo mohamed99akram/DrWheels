@@ -116,10 +116,10 @@ jobs:
           cd wheelops
           
           # Update backend image tag
-          sed -i "s|image: .*/backend:.*|image: ${{ secrets.DOCKER_REGISTRY }}/backend:${{ github.sha }}|g" drwheels/backend-deployment.yaml
+          sed -i "s|image: .*/backend:.*|image: ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/backend:${{ github.sha }}|g" drwheels/backend-deployment.yaml
           
           # Update frontend image tag
-          sed -i "s|image: .*/frontend:.*|image: ${{ secrets.DOCKER_REGISTRY }}/frontend:${{ github.sha }}|g" drwheels/frontend-deployment.yaml
+          sed -i "s|image: .*/frontend:.*|image: ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/frontend:${{ github.sha }}|g" drwheels/frontend-deployment.yaml
           
           # Commit and push changes
           git add .
