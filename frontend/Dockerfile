@@ -1,5 +1,6 @@
-# Stage 1: build
 FROM node:18-alpine AS build
+ARG REACT_APP_API_URL=https://drwheels-api.chickenkiller.com/api
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 WORKDIR /app
 COPY package*.json ./

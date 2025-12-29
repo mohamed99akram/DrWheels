@@ -94,8 +94,8 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ${{ secrets.DOCKER_REGISTRY }}/backend:latest
-            ${{ secrets.DOCKER_REGISTRY }}/backend:${{ github.sha }}
+            ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/backend:latest
+            ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/backend:${{ github.sha }}
       
       - name: Build and push Frontend Docker image
         uses: docker/build-push-action@v4
@@ -103,8 +103,8 @@ jobs:
           context: ./frontend
           push: true
           tags: |
-            ${{ secrets.DOCKER_REGISTRY }}/frontend:latest
-            ${{ secrets.DOCKER_REGISTRY }}/frontend:${{ github.sha }}
+            ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/frontend:latest
+            ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/frontend:${{ github.sha }}
       
       # - name: Build Mobile
       #   working-directory: ./mobile
