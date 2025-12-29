@@ -83,6 +83,7 @@ jobs:
         run: |
           npm ci
           echo "Backend build complete"
+          echo "Backend build complete - message 2"
       
       - name: Build Frontend
         working-directory: ./frontend
