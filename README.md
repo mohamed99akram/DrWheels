@@ -1,6 +1,6 @@
 # 🚗 DrWheels Simplified - Complete Application
 
-A simplified version of the DrWheels automotive commerce platform with all core components: backend, frontend, mobile app, data stores, and CI/CD pipeline.
+A simplified version of the DrWheels automotive commerce platform with all core components: backend, frontend, data stores, and CI/CD pipeline.
 
 ## 📋 Project Structure
 
@@ -18,10 +18,6 @@ Phase 3/
 │   │   ├── pages/      # Page components
 │   │   └── services/   # API services
 │   └── public/
-├── mobile/              # Flutter mobile application
-│   └── lib/
-│       ├── features/   # Feature modules
-│       └── services/   # API services
 ├── .github/
 │   └── workflows/      # CI/CD pipelines
 └── docker-compose.yml  # Local development setup
@@ -42,11 +38,7 @@ Phase 3/
    - Material-UI components
    - Responsive design
 
-3. **Mobile App** (Flutter)
-   - Cross-platform (iOS & Android)
-   - Native performance
-
-4. **Data Stores**
+3. **Data Stores**
    - MongoDB (primary database)
    - Redis (caching - optional)
 
@@ -60,7 +52,6 @@ Phase 3/
 ### Prerequisites
 - Node.js 18+
 - MongoDB 6+
-- Flutter 3.0+ (for mobile)
 - Docker & Docker Compose (optional)
 
 ### Backend Setup
@@ -75,13 +66,6 @@ npm start
 cd frontend
 npm install
 npm start
-```
-
-### Mobile Setup
-```bash
-cd mobile
-flutter pub get
-flutter run
 ```
 
 ### Docker Setup (All Services)
@@ -130,7 +114,6 @@ docker-compose up -d
 
 ### User Interface
 - ✅ Responsive web interface (Material-UI)
-- ✅ Mobile app support (Flutter)
 - ✅ Modern, intuitive design
 - ✅ Image galleries and carousels
 
@@ -138,7 +121,6 @@ docker-compose up -d
 
 - **Backend**: Node.js, Express, MongoDB, JWT
 - **Frontend**: React, Material-UI, Axios
-- **Mobile**: Flutter, Dart
 - **Database**: MongoDB
 - **CI/CD**: GitHub Actions
 
@@ -163,4 +145,5 @@ cd frontend && npm test
 - **Marketplace Features**: `MARKETPLACE_FEATURES.md` - Feature documentation
 - Backend API docs: `backend/README.md`
 - Frontend docs: `frontend/README.md`
-- Mobile docs: `mobile/README.md`
+- Backend Security: `backend/SECURITY.md`
+- Frontend Security: `frontend/SECURITY.md`

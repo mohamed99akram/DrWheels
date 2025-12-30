@@ -1,0 +1,38 @@
+codecov:
+  token: # Optional: Add Codecov token if using private repos
+  bot: false
+  ci:
+    - github-actions
+
+coverage:
+  status:
+    project:
+      default:
+        target: 70%
+        threshold: 5%
+        base: auto
+        branches:
+          - master
+          - develop
+    patch:
+      default:
+        target: 60%
+        threshold: 5%
+        base: auto
+
+comment:
+  layout: "reach,diff,flags,tree,reach"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+ignore:
+  - "**/node_modules/**"
+  - "**/tests/**"
+  - "**/coverage/**"
+  - "**/*.test.js"
+  - "**/*.spec.js"
+  - "**/jest.config.js"
+  - "**/setup.js"
+

@@ -1,0 +1,21 @@
+name: staging
+url: https://staging.drwheels.com
+
+protection_rules:
+  - type: required_reviewers
+    reviewers:
+      - devops-team
+      - security-team
+    dismiss_stale_reviews: true
+    required_approving_review_count: 1
+
+  - type: wait_timer
+    minutes: 5
+
+deployment_branch_policy:
+  protected_branches: false
+  custom_branch_policies: true
+  custom_branch_policy:
+    - master
+    - develop
+

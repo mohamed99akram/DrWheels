@@ -1,0 +1,42 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch"
+    },
+    {
+      "matchPackagePatterns": ["^@mui/", "^@emotion/"],
+      "groupName": "Material-UI dependencies"
+    },
+    {
+      "matchPackagePatterns": ["^react", "^react-dom"],
+      "groupName": "React dependencies"
+    },
+    {
+      "matchPackagePatterns": ["^express", "^mongoose", "^jsonwebtoken"],
+      "groupName": "Backend core dependencies"
+    },
+    {
+      "matchPackagePatterns": ["^helmet", "^express-rate-limit", "^express-mongo-sanitize"],
+      "groupName": "Security dependencies"
+    }
+  ],
+  "schedule": ["before 10am on monday"],
+  "timezone": "UTC",
+  "automerge": false,
+  "automergeType": "pr",
+  "prCreation": "not-pending",
+  "labels": ["dependencies"],
+  "reviewers": ["devops-team"]
+}
+

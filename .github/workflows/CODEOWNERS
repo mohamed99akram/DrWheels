@@ -1,0 +1,39 @@
+# Code owners for automatic review requests
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners
+* @devops-team
+
+# Backend
+/backend/ @backend-team @devops-team
+/backend/**/*.js @backend-team
+/backend/middleware/ @backend-team @security-team
+/backend/controllers/ @backend-team
+
+# Frontend
+/frontend/ @frontend-team @devops-team
+/frontend/src/**/*.js @frontend-team
+/frontend/src/utils/security.js @frontend-team @security-team
+/frontend/src/utils/owaspValidator.js @frontend-team @security-team
+
+# Security
+**/security* @security-team
+**/SECURITY*.md @security-team
+**/middleware/security.js @security-team
+**/utils/security.js @security-team
+**/utils/owaspValidator.js @security-team
+
+# CI/CD
+/.github/ @devops-team
+/.github/workflows/ @devops-team
+/.github/environments/ @devops-team
+/docker-compose*.yml @devops-team
+**/Dockerfile @devops-team
+
+# Infrastructure
+/terraform/ @devops-team @infrastructure-team
+
+# Documentation
+*.md @tech-lead
+/README.md @tech-lead
+

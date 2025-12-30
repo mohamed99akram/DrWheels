@@ -1,0 +1,19 @@
+name: production
+url: https://drwheels.com
+
+protection_rules:
+  - type: required_reviewers
+    reviewers:
+      - devops-team
+      - security-team
+      - tech-lead
+    dismiss_stale_reviews: true
+    required_approving_review_count: 2
+
+  - type: wait_timer
+    minutes: 10
+
+deployment_branch_policy:
+  protected_branches: true
+  custom_branch_policies: false
+

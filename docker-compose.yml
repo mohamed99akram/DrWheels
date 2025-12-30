@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   mongodb:
-    image: mongo:7.0
+    image: mongo:6
     container_name: drwheels-mongodb
     ports:
       - "27017:27017"
@@ -12,6 +12,11 @@ services:
       - mongodb_data:/data/db
     networks:
       - drwheels-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -23,29 +28,47 @@ services:
     environment:
       - NODE_ENV=development
       - MONGODB_URI=mongodb://mongodb:27017/drwheels
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-      - CORS_ORIGIN=http://localhost:3000
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      - JWT_EXPIRE=${JWT_EXPIRE:-7d}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
+      - PORT=4000
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - drwheels-network
     volumes:
       - ./backend:/app
       - /app/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:4000/api}
     container_name: drwheels-frontend
     ports:
       - "3000:80"
     environment:
-      - REACT_APP_API_URL=http://localhost:4000/api
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:4000/api}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - drwheels-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   mongodb_data:

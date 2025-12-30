@@ -1,0 +1,11 @@
+node_modules
+coverage
+dist
+build
+*.log
+package-lock.json
+*.min.js
+*.min.css
+.env
+.env.*
+

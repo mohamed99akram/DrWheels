@@ -1,0 +1,32 @@
+name: Dependabot Auto-Merge
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Check if PR is safe to merge
+        id: check
+        run: |
+          # Only auto-merge if:
+          # 1. All checks pass
+          # 2. No security vulnerabilities
+          # 3. Patch or minor updates only
+          echo "Checking PR safety..."
+          # Add your safety checks here
+      
+      - name: Auto-merge
+        if: steps.check.outcome == 'success'
+        uses: fastify/github-action-merge-dependabot@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          target: minor
+          merge-method: squash
+

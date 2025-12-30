@@ -17,13 +17,14 @@ import {
   Rating,
   IconButton,
   Pagination,
-  Slider,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { Favorite, FavoriteBorder } from '@mui/icons-material';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
+import { sanitizeInput } from '../utils/owaspValidator';
+import { checkRateLimit, rateLimits } from '../utils/rateLimiter';
 
 const Cars = () => {
   const { user } = useContext(AuthContext);
@@ -101,8 +102,36 @@ const Cars = () => {
   };
 
   const handleFilterChange = (field, value) => {
-    setFilters({ ...filters, [field]: value });
+    // Sanitize input based on field type
+    let sanitizedValue = value;
+    
+    if (field === 'search' || field === 'make' || field === 'model' || field === 'color') {
+      // Sanitize text inputs
+      sanitizedValue = sanitizeInput.text(value);
+    } else if (field === 'minYear' || field === 'maxYear' || 
+               field === 'minPrice' || field === 'maxPrice' || 
+               field === 'minMileage' || field === 'maxMileage') {
+      // Sanitize numeric inputs
+      sanitizedValue = sanitizeInput.number(value);
+      if (sanitizedValue === null && value !== '') {
+        return; // Invalid number, don't update
+      }
+    }
+    
+    setFilters({ ...filters, [field]: sanitizedValue });
     setPagination({ ...pagination, page: 1 });
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    
+    // Check rate limit for search
+    const rateLimit = checkRateLimit('search', rateLimits.search);
+    if (!rateLimit.allowed) {
+      return; // Silently ignore if rate limited
+    }
+    
+    fetchCars();
   };
 
   const toggleFavorite = async (e, carId) => {
@@ -156,7 +185,15 @@ const Cars = () => {
               label="Search"
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch(e);
+                }
+              }}
               placeholder="Make, model, or description"
+              inputProps={{
+                maxLength: 100
+              }}
             />
           </Grid>
           <Grid item xs={12} md={2}>

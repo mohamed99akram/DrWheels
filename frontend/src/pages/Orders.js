@@ -215,7 +215,7 @@ const Orders = () => {
         <DialogTitle>Update Order Status</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to change the order status to "{newStatus}"?
+            Are you sure you want to change the order status to &quot;{newStatus}&quot;?
           </Typography>
         </DialogContent>
         <DialogActions>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -15,6 +15,8 @@ import Profile from './pages/Profile';
 import Chat from './pages/Chat';
 import Favorites from './pages/Favorites';
 import Orders from './pages/Orders';
+import { initCSRFProtection } from './utils/csrfProtection';
+import { setupCSPViolationHandler } from './utils/security';
 
 const theme = createTheme({
   palette: {
@@ -28,6 +30,14 @@ const theme = createTheme({
 });
 
 function App() {
+  useEffect(() => {
+    // Initialize CSRF protection
+    initCSRFProtection();
+    
+    // Setup CSP violation handler
+    setupCSPViolationHandler();
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

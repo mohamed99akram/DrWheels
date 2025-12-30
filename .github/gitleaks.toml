@@ -1,0 +1,53 @@
+title = "Gitleaks Config – DevSecOps Tuned"
+
+# =========================
+# Global Settings
+# =========================
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowed files and patterns"
+paths = [
+  '''node_modules''',
+  '''dist''',
+  '''build''',
+  '''.git''',
+  '''.github''',
+  '''coverage'''
+]
+
+# Allow obvious test & dummy secrets
+regexes = [
+  '''test-secret''',
+  '''test-secret-key-for-jwt-tokens-in-ci''',
+  '''dummy-key''',
+  '''example-key''',
+  '''changeme'''
+]
+
+# =========================
+# Rule Overrides
+# =========================
+
+# Lower noise rules → warn only
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+severity = "low"
+
+
+
+# High-impact secrets → fail pipeline
+[[rules]]
+id = "private-key"
+severity = "critical"
+
+[[rules]]
+id = "github-pat"
+severity = "high"
+
+[[rules]]
+id = "jwt"
+description = "JWT token"
+severity = "critical"

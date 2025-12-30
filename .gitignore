@@ -2,6 +2,8 @@
 .env
 .env.local
 .env.*.local
+.env.*.env
+!.env.example
 
 # IDE
 .vscode/
@@ -9,24 +11,101 @@
 *.swp
 *.swo
 *~
+.project
+.classpath
+.settings/
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
 
 # Logs
 *.log
 logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
 
-# Dependencies (already in component .gitignore files)
-# node_modules/
-# .dart_tool/
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.dart_tool/
+.pub-cache/
+.pub/
 
 # Build outputs
 dist/
 build/
 *.apk
 *.ipa
+*.aab
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+.jest/
+test-results/
+playwright-report/
 
 # Docker
 docker-compose.override.yml
+.docker/
+
+# Security & CI/CD
+*.sarif
+*.secret
+secrets/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+eslint-report.json
+sbom-*.xml
+zap-report.*
+zap-alerts.json
+trivy-*.sarif
+scout_results/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*~
+
+# Mobile (if needed in future)
+*.app
+*.ipa
+*.apk
+*.aab
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+
+# IDE specific
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Package manager locks (optional - some teams prefer to commit these)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

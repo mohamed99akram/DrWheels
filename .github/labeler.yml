@@ -1,0 +1,43 @@
+# Labeler configuration for automatic PR labeling
+
+backend:
+  - backend/**/*
+  - '**/backend/**/*'
+
+frontend:
+  - frontend/**/*
+  - '**/frontend/**/*'
+
+security:
+  - '**/security/**/*'
+  - '**/*security*'
+  - '**/middleware/security.js'
+  - '**/utils/security.js'
+  - '**/utils/owaspValidator.js'
+  - '**/SECURITY*.md'
+
+ci-cd:
+  - '.github/workflows/**/*'
+  - '.github/environments/**/*'
+  - '**/Dockerfile'
+  - 'docker-compose*.yml'
+  - '**/.github/**/*'
+
+dependencies:
+  - '**/package.json'
+  - '**/package-lock.json'
+  - '**/requirements.txt'
+  - '**/Pipfile'
+
+documentation:
+  - '**/*.md'
+  - '**/README.md'
+  - '**/docs/**/*'
+
+testing:
+  - '**/tests/**/*'
+  - '**/__tests__/**/*'
+  - '**/*.test.js'
+  - '**/*.spec.js'
+  - '**/jest.config.js'
+

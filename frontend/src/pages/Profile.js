@@ -143,7 +143,7 @@ const Profile = () => {
             {myCars.length === 0 ? (
               <Box textAlign="center" py={4}>
                 <Typography variant="body1" color="text.secondary" gutterBottom>
-                  You haven't listed any vehicles yet.
+                  You haven&apos;t listed any vehicles yet.
                 </Typography>
                 <Button
                   variant="outlined"

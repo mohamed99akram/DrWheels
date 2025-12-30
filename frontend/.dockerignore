@@ -1,0 +1,56 @@
+# Dependencies
+node_modules
+npm-debug.log
+package-lock.json
+
+# Testing
+coverage
+.nyc_output
+*.test.js
+*.spec.js
+tests
+__tests__
+src/**/__tests__
+
+# Development
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts (will be created in container)
+build
+dist
+
+# Documentation
+*.md
+!README.md
+
+# Git
+.git
+.gitignore
+
+# CI/CD
+.github
+
+# Security reports
+*.sarif
+eslint-report.json
+sbom-*.xml
+
+# Source maps (optional, can include for debugging)
+# *.map
+
