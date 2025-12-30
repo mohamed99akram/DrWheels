@@ -223,16 +223,20 @@ jobs:
         continue-on-error: true
 
       # Secrets Scanning
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # REQUIRED for PRs to avoid commit range errors
+
       - name: Secrets Scan (Gitleaks)
         uses: gitleaks/gitleaks-action@v2
         with:
-          fail: true
-          config-path: .github/gitleaks.toml
-          verbose: true
-          exit-code: 1
-          commit: ${{ github.sha }}
-          repository: ${{ github.repository }}
-          branch: ${{ github.ref }}
+          args: detect --redact --verbose \
+            --config-path=.github/gitleaks.toml \
+            --report-format=sarif --report-path=results.sarif \
+            --exit-code=1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
       # IaC Security Scanning
       - name: Infrastructure as Code Security Scan (Checkov)
