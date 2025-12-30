@@ -63,6 +63,6 @@ export const addCSRFTokenToHeaders = (headers = {}) => {
  */
 export const verifyCSRFToken = (responseToken) => {
   const storedToken = getCSRFToken();
-  return storedToken && storedToken === responseToken;
+  return !!storedToken && storedToken === responseToken;
 };
 

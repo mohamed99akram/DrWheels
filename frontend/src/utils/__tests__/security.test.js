@@ -66,12 +66,21 @@ describe('Security Utils', () => {
     beforeEach(() => {
       jest.clearAllMocks();
       // Reset localStorage mock - clear the internal store
+      localStorage.getItem.mockImplementation((key) => global.localStorageStore[key] || null);
+      localStorage.setItem.mockImplementation((key, value) => { global.localStorageStore[key] = value.toString(); });
+      localStorage.removeItem.mockImplementation((key) => { delete global.localStorageStore[key]; });
+      localStorage.clear.mockImplementation(() => {
+        Object.keys(global.localStorageStore).forEach((key) => {
+          delete global.localStorageStore[key];
+        });
+      });
       localStorage.clear();
     });
 
     it('should set item in localStorage', () => {
       secureStorage.setItem('test', 'value');
       expect(localStorage.setItem).toHaveBeenCalledWith('test', 'value');
+      expect(localStorage.getItem('test')).toBe('value');
     });
 
     it('should get item from localStorage', () => {
@@ -82,13 +91,17 @@ describe('Security Utils', () => {
     });
 
     it('should remove item from localStorage', () => {
+      localStorage.setItem('test', 'value');
       secureStorage.removeItem('test');
       expect(localStorage.removeItem).toHaveBeenCalledWith('test');
+      expect(localStorage.getItem('test')).toBeNull();
     });
 
     it('should clear localStorage', () => {
+      localStorage.setItem('test', 'value');
       secureStorage.clear();
       expect(localStorage.clear).toHaveBeenCalled();
+      expect(localStorage.getItem('test')).toBeNull();
     });
   });
 

@@ -139,6 +139,14 @@ const validateCarId = [
   handleValidationErrors
 ];
 
+// Validation for carId parameter (used in reviews routes)
+const validateCarIdParam = [
+  param('carId')
+    .isMongoId()
+    .withMessage('Invalid car ID'),
+  handleValidationErrors
+];
+
 // Order validation rules
 const validateCreateOrder = [
   body('carId')
@@ -268,6 +276,7 @@ module.exports = {
   validateCreateCar,
   validateUpdateCar,
   validateCarId,
+  validateCarIdParam,
   validateCreateOrder,
   validateOrderId,
   validateOrderIdParam,

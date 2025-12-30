@@ -1,19 +1,30 @@
 // Mock axios before importing api
+const requestHandlers = [];
+const responseHandlers = [];
+
 jest.mock('axios', () => {
   const mockAxiosInstance = {
     defaults: {
       baseURL: 'http://localhost:4000/api',
       timeout: 10000,
-      headers: {}
+      headers: {
+        common: {}
+      }
     },
     interceptors: {
       request: {
-        use: jest.fn(),
-        handlers: []
+        use: jest.fn((fulfilled, rejected) => {
+          requestHandlers.push({ fulfilled, rejected });
+          return 0; // Return handler ID
+        }),
+        handlers: requestHandlers
       },
       response: {
-        use: jest.fn(),
-        handlers: []
+        use: jest.fn((fulfilled, rejected) => {
+          responseHandlers.push({ fulfilled, rejected });
+          return 0; // Return handler ID
+        }),
+        handlers: responseHandlers
       }
     },
     get: jest.fn(() => Promise.resolve({ data: {} })),
@@ -32,10 +43,9 @@ jest.mock('axios', () => {
   };
 });
 
-import api from '../api';
-import { secureStorage } from '../../utils/security';
-import { getCSRFToken } from '../../utils/csrfProtection';
-import { checkRateLimit } from '../../utils/rateLimiter';
+let api;
+let secureStorage;
+let checkRateLimit;
 
 jest.mock('../../utils/security', () => ({
   secureStorage: {
@@ -63,7 +73,20 @@ jest.mock('../../utils/rateLimiter', () => ({
 describe('API Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Reset handlers and re-require api so interceptors are re-registered
+    requestHandlers.length = 0;
+    responseHandlers.length = 0;
+    jest.resetModules();
+
+    // Re-require mocked modules after resetModules so we share the same instances
+    ({ secureStorage } = require('../../utils/security'));
+    ({ checkRateLimit } = require('../../utils/rateLimiter'));
+
     secureStorage.getItem.mockReturnValue(null);
+
+    const apiModule = require('../api');
+    api = apiModule.default || apiModule;
   });
 
   it('should have correct base URL', () => {
@@ -79,7 +102,9 @@ describe('API Service', () => {
   it('should add Authorization header when token exists', () => {
     secureStorage.getItem.mockReturnValue('test-token');
     
-    const config = api.interceptors.request.handlers[0].fulfilled({
+    // Get the first request interceptor handler
+    const handler = api.interceptors.request.handlers[0];
+    const config = handler.fulfilled({
       headers: {},
       method: 'get',
       url: '/test'
@@ -89,7 +114,8 @@ describe('API Service', () => {
   });
 
   it('should add CSRF token for POST requests', () => {
-    const config = api.interceptors.request.handlers[0].fulfilled({
+    const handler = api.interceptors.request.handlers[0];
+    const config = handler.fulfilled({
       headers: {},
       method: 'post',
       url: '/test'
@@ -99,9 +125,8 @@ describe('API Service', () => {
   });
 
   it('should check rate limit before requests', () => {
-    const { checkRateLimit } = require('../../utils/rateLimiter');
-    
-    api.interceptors.request.handlers[0].fulfilled({
+    const handler = api.interceptors.request.handlers[0];
+    handler.fulfilled({
       headers: {},
       method: 'get',
       url: '/api/auth/login'
@@ -110,7 +135,7 @@ describe('API Service', () => {
     expect(checkRateLimit).toHaveBeenCalled();
   });
 
-  it('should remove token on 401 response', () => {
+  it('should remove token on 401 response', async () => {
     const error = {
       response: {
         status: 401
@@ -121,13 +146,15 @@ describe('API Service', () => {
     delete window.location;
     window.location = { pathname: '/test', href: '' };
 
-    api.interceptors.response.handlers[0].rejected(error);
+    const handler = api.interceptors.response.handlers[0];
+    await handler.rejected(error).catch(() => {});
 
     expect(secureStorage.removeItem).toHaveBeenCalledWith('token');
   });
 
   it('should sanitize request data', () => {
-    const config = api.interceptors.request.handlers[0].fulfilled({
+    const handler = api.interceptors.request.handlers[0];
+    const config = handler.fulfilled({
       headers: {},
       method: 'post',
       url: '/test',

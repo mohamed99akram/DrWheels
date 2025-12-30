@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import SecureInput from '../SecureInput';
 import { validationSchemas, owaspRules } from '../../utils/owaspValidator';
 
@@ -42,45 +42,73 @@ describe('SecureInput Component', () => {
     expect(callArgs.target.value).not.toContain('<script>');
   });
 
-  it('should validate email input', () => {
+  it('should validate email input', async () => {
+    const Wrapper = () => {
+      const [value, setValue] = React.useState('');
+      return (
+        <SecureInput
+          name="email"
+          label="Email"
+          value={value}
+          onChange={(e) => {
+            mockOnChange(e);
+            setValue(e.target.value);
+          }}
+          type="email"
+          schema={validationSchemas.login}
+        />
+      );
+    };
+
     render(
-      <SecureInput
-        name="email"
-        label="Email"
-        value=""
-        onChange={mockOnChange}
-        type="email"
-        schema={validationSchemas.login.email}
-      />
+      <Wrapper />
     );
 
-    const input = screen.getByLabelText('Email');
+    const input = screen.getByRole('textbox', { name: /email/i });
     fireEvent.change(input, { target: { value: 'invalid-email' } });
     fireEvent.blur(input);
 
-    // Should show validation error
-    expect(screen.getByText(/invalid|email/i)).toBeInTheDocument();
+    // Should show validation error - check for helper text
+    await waitFor(() => {
+      expect(screen.getByText('Please enter a valid email address')).toBeInTheDocument();
+    });
   });
 
-  it('should validate password input', () => {
+  it('should validate password input', async () => {
+    const Wrapper = () => {
+      const [value, setValue] = React.useState('');
+      return (
+        <SecureInput
+          name="password"
+          label="Password"
+          value={value}
+          onChange={(e) => {
+            mockOnChange(e);
+            setValue(e.target.value);
+          }}
+          type="password"
+          schema={validationSchemas.register}
+          required
+        />
+      );
+    };
+
     render(
-      <SecureInput
-        name="password"
-        label="Password"
-        value=""
-        onChange={mockOnChange}
-        type="password"
-        schema={validationSchemas.register.password}
-        required
-      />
+      <Wrapper />
     );
 
-    const input = screen.getByLabelText('Password');
+    const input = screen.getByLabelText(/password/i);
     fireEvent.change(input, { target: { value: 'weak' } });
     fireEvent.blur(input);
 
     // Should show validation error for weak password
-    expect(screen.getByText(/password|strong|characters/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Password must be at least 8 characters with uppercase, lowercase, number, and special character'
+        )
+      ).toBeInTheDocument();
+    });
   });
 
   it('should show helper text', () => {
@@ -145,9 +173,9 @@ describe('SecureInput Component', () => {
       />
     );
 
-    // Material-UI uses aria-required instead of required attribute
+    // Material-UI uses required attribute
     const input = screen.getByRole('textbox', { name: /required field/i });
-    expect(input).toHaveAttribute('required');
+    expect(input).toBeRequired();
   });
 });
 

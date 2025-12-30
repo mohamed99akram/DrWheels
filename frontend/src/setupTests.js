@@ -19,39 +19,111 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-// Mock localStorage
-const localStorageMock = (() => {
-  let store = {};
-  return {
-    getItem: jest.fn((key) => store[key] || null),
-    setItem: jest.fn((key, value) => { store[key] = value.toString(); }),
-    removeItem: jest.fn((key) => { delete store[key]; }),
-    clear: jest.fn(() => { store = {}; }),
-  };
-})();
+// Mock localStorage with proper jest.fn() structure
+let localStorageStore = {};
+const localStorageMock = {
+  getItem: jest.fn((key) => localStorageStore[key] || null),
+  setItem: jest.fn((key, value) => { localStorageStore[key] = value.toString(); }),
+  removeItem: jest.fn((key) => { delete localStorageStore[key]; }),
+  clear: jest.fn(() => {
+    Object.keys(localStorageStore).forEach((key) => {
+      delete localStorageStore[key];
+    });
+  }),
+};
 global.localStorage = localStorageMock;
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+  configurable: true,
+});
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+  configurable: true,
+});
 
-// Mock sessionStorage
-const sessionStorageMock = (() => {
-  let store = {};
-  return {
-    getItem: jest.fn((key) => store[key] || null),
-    setItem: jest.fn((key, value) => { store[key] = value.toString(); }),
-    removeItem: jest.fn((key) => { delete store[key]; }),
-    clear: jest.fn(() => { store = {}; }),
-  };
-})();
+global.localStorageStore = localStorageStore;
+
+// Mock sessionStorage with proper jest.fn() structure
+let sessionStorageStore = {};
+const sessionStorageMock = {
+  getItem: jest.fn((key) => sessionStorageStore[key] || null),
+  setItem: jest.fn((key, value) => { sessionStorageStore[key] = value.toString(); }),
+  removeItem: jest.fn((key) => { delete sessionStorageStore[key]; }),
+  clear: jest.fn(() => {
+    Object.keys(sessionStorageStore).forEach((key) => {
+      delete sessionStorageStore[key];
+    });
+  }),
+};
 global.sessionStorage = sessionStorageMock;
+Object.defineProperty(window, 'sessionStorage', {
+  value: sessionStorageMock,
+  writable: true,
+  configurable: true,
+});
+Object.defineProperty(globalThis, 'sessionStorage', {
+  value: sessionStorageMock,
+  writable: true,
+  configurable: true,
+});
+global.sessionStorageStore = sessionStorageStore;
 
 // Mock crypto for CSRF token generation
 global.crypto = {
   getRandomValues: jest.fn((arr) => {
+    global.crypto.__counter = (global.crypto.__counter || 0) + 1;
+    const c = global.crypto.__counter;
     for (let i = 0; i < arr.length; i++) {
-      arr[i] = Math.floor(Math.random() * 256);
+      arr[i] = (c + i) % 256;
     }
     return arr;
   }),
 };
+
+Object.defineProperty(window, 'crypto', {
+  value: global.crypto,
+  writable: true,
+  configurable: true,
+});
+Object.defineProperty(globalThis, 'crypto', {
+  value: global.crypto,
+  writable: true,
+  configurable: true,
+});
+
+beforeEach(() => {
+  global.localStorageStore = localStorageStore;
+  localStorageMock.getItem.mockImplementation((key) => localStorageStore[key] || null);
+  localStorageMock.setItem.mockImplementation((key, value) => { localStorageStore[key] = value.toString(); });
+  localStorageMock.removeItem.mockImplementation((key) => { delete localStorageStore[key]; });
+  localStorageMock.clear.mockImplementation(() => {
+    Object.keys(localStorageStore).forEach((key) => {
+      delete localStorageStore[key];
+    });
+  });
+
+  global.sessionStorageStore = sessionStorageStore;
+  sessionStorageMock.getItem.mockImplementation((key) => sessionStorageStore[key] || null);
+  sessionStorageMock.setItem.mockImplementation((key, value) => { sessionStorageStore[key] = value.toString(); });
+  sessionStorageMock.removeItem.mockImplementation((key) => { delete sessionStorageStore[key]; });
+  sessionStorageMock.clear.mockImplementation(() => {
+    Object.keys(sessionStorageStore).forEach((key) => {
+      delete sessionStorageStore[key];
+    });
+  });
+
+  global.crypto.__counter = 0;
+  global.crypto.getRandomValues.mockImplementation((arr) => {
+    global.crypto.__counter = (global.crypto.__counter || 0) + 1;
+    const c = global.crypto.__counter;
+    for (let i = 0; i < arr.length; i++) {
+      arr[i] = (c + i) % 256;
+    }
+    return arr;
+  });
+});
 
 // Mock axios to avoid ES module issues
 // This is a fallback - individual test files should mock axios as needed

@@ -6,13 +6,13 @@ const {
   validateCreateReview,
   validateReviewId,
   validateUpdateReview,
-  validateCarId
+  validateCarIdParam
 } = require('../middleware/validation');
 
-router.post('/car/:carId', auth, validateCreateReview, reviewController.createReview);
+router.post('/car/:carId', auth, validateCarIdParam, validateCreateReview, reviewController.createReview);
 router.put('/:reviewId', auth, validateUpdateReview, reviewController.updateReview);
 router.delete('/:reviewId', auth, validateReviewId, reviewController.deleteReview);
-router.get('/car/:carId', validateCarId, reviewController.getCarReviews);
+router.get('/car/:carId', validateCarIdParam, reviewController.getCarReviews);
 router.get('/user', auth, reviewController.getUserReviews);
 
 module.exports = router;

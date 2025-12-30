@@ -4,7 +4,9 @@ jest.mock('axios', () => {
     defaults: {
       baseURL: 'http://localhost:4000/api',
       timeout: 10000,
-      headers: {}
+      headers: {
+        common: {}
+      }
     },
     interceptors: {
       request: {
