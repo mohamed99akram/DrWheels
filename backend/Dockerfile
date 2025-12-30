@@ -1,7 +1,7 @@
 ############################
 # Runtime Image
 ############################
-FROM node:18-alpine
+FROM node:25-alpine
 
 # Set runtime environment explicitly
 ENV NODE_ENV=production
