@@ -25,7 +25,7 @@ RUN DISABLE_ESLINT_PLUGIN=true npm run build
 ############################
 # Stage 2: Runtime
 ############################
-FROM nginx:1.25-alpine
+FROM nginx:1.29-alpine
 
 # Remove default nginx static content
 RUN rm -rf /usr/share/nginx/html/*
