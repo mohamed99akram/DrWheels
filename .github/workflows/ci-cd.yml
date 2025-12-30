@@ -195,6 +195,16 @@ jobs:
       
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+        with:
+          upload: false
+          output: codeql-results
+
+      - name: Upload CodeQL results (SARIF)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-codeql-sarif
+          path: codeql-results/**/*.sarif
 
       # Dependency Scanning
       - name: Dependency & License Scan (Anchore)
@@ -293,6 +303,16 @@ jobs:
       
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+        with:
+          upload: false
+          output: codeql-results
+
+      - name: Upload CodeQL results (SARIF)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-codeql-sarif
+          path: codeql-results/**/*.sarif
 
       # Dependency Scanning
       - name: Snyk Dependency & License Scan (Frontend)
@@ -398,10 +418,11 @@ jobs:
         continue-on-error: true
       
       - name: Upload Trivy Backend results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          sarif_file: 'trivy-backend.sarif'
+          name: trivy-backend-sarif
+          path: trivy-backend.sarif
       
       - name: Scan Frontend Image (Trivy)
         uses: aquasecurity/trivy-action@master
@@ -413,10 +434,11 @@ jobs:
         continue-on-error: true
       
       - name: Upload Trivy Frontend results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          sarif_file: 'trivy-frontend.sarif'
+          name: trivy-frontend-sarif
+          path: trivy-frontend.sarif
 
 # ============================================
 # STAGE 4: DEPLOY TO DEVELOPMENT
