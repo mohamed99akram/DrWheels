@@ -67,24 +67,26 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// MongoDB connection
-const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/drwheels';
-if (!process.env.MONGODB_URI) {
-  console.warn('⚠️  MONGODB_URI not set, using default: mongodb://localhost:27017/drwheels');
-  console.warn('💡 Create a .env file with MONGODB_URI, JWT_SECRET, and other variables');
-}
+// MongoDB connection - skip in test environment (tests use mongodb-memory-server)
+if (process.env.NODE_ENV !== 'test') {
+  const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/drwheels';
+  if (!process.env.MONGODB_URI) {
+    console.warn('⚠️  MONGODB_URI not set, using default: mongodb://localhost:27017/drwheels');
+    console.warn('💡 Create a .env file with MONGODB_URI, JWT_SECRET, and other variables');
+  }
 
-mongoose.connect(mongoUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB connected'))
-.catch(err => {
-  console.error('❌ MongoDB connection error:', err.message);
-  console.error('⚠️  Server will continue but database operations will fail');
-  console.error('💡 Make sure MongoDB is running: mongod or docker-compose up mongodb');
-  // Don't exit - allow server to start for testing without MongoDB
-});
+  mongoose.connect(mongoUri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err.message);
+    console.error('⚠️  Server will continue but database operations will fail');
+    console.error('💡 Make sure MongoDB is running: mongod or docker-compose up mongodb');
+    // Don't exit - allow server to start for testing without MongoDB
+  });
+}
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

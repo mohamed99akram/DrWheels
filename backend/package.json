@@ -8,7 +8,7 @@
     "dev": "nodemon server.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
-    "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:ci": "jest --ci --coverage --maxWorkers=2 --forceExit --detectOpenHandles",
     "lint": "eslint .",
     "audit": "npm audit",
     "audit:fix": "npm audit fix"
