@@ -245,16 +245,19 @@ jobs:
 
       # SBOM Generation
       - name: Generate Backend SBOM
-        working-directory: ./backend
-        run: |
-          npm install -g @cyclonedx/bom
-          "$(npm bin -g)/cyclonedx-bom" -o sbom-backend.xml
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './backend'
+          format: 'cyclonedx'
+          output: 'sbom-backend.xml'
+        continue-on-error: true
       
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v4
         with:
           name: backend-sbom
-          path: backend/sbom-backend.xml
+          path: sbom-backend.xml
 
   frontend-security-scan:
     name: Frontend Security Scan
@@ -325,16 +328,19 @@ jobs:
 
       # SBOM Generation
       - name: Generate Frontend SBOM
-        working-directory: ./frontend
-        run: |
-          npm install -g @cyclonedx/bom
-          "$(npm bin -g)/cyclonedx-bom" -o sbom-frontend.xml
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './frontend'
+          format: 'cyclonedx'
+          output: 'sbom-frontend.xml'
+        continue-on-error: true
       
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v4
         with:
           name: frontend-sbom
-          path: frontend/sbom-frontend.xml
+          path: sbom-frontend.xml
 
 # ============================================
 # STAGE 3: BUILD DOCKER IMAGES
