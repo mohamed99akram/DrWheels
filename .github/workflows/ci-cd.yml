@@ -673,7 +673,8 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-    if: github.ref == 'refs/heads/master'
+    #if: github.ref == 'refs/heads/master'
+    if: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -697,15 +698,10 @@ jobs:
           
           # Update backend image tag
           # sed -i "s|image: .*/backend:.*|image: ${{ needs.build-images.outputs.backend-image }}|g" drwheels/backend-deployment.yaml
-          SHORT_SHA="${{GITHUB_SHA::7}"
-          echo $SHORT_SHA
-          sed -i "s|image: .*/backend:.*|image: ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/backend:master-${SHORT_SHA}|g" drwheels/backend-deployment.yaml
           
           # Update frontend image tag
           # sed -i "s|image: .*/frontend:.*|image: ${{ needs.build-images.outputs.frontend-image }}|g" drwheels/frontend-deployment.yaml
-          SHORT_SHA="${GITHUB_SHA::7}"
-          echo $SHORT_SHA
-          sed -i "s|image: .*/frontend:.*|image: ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/frontend:master-${SHORT_SHA}|g" drwheels/frontend-deployment.yaml
+
           # Commit and push changes
           git add .
           git commit -m "Update images to ${{ github.sha }}" || exit 0
