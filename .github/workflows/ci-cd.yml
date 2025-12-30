@@ -194,7 +194,7 @@ jobs:
 
       # Dependency Scanning
       - name: Dependency & License Scan (Anchore)
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v7
         with:
           path: ./backend
           fail-build: true
