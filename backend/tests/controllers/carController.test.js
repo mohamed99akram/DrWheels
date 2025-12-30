@@ -91,7 +91,8 @@ describe('Car Controller', () => {
     });
 
     it('should return 404 for non-existent car', async () => {
-      const fakeId = require('mongoose').Types.ObjectId();
+      const mongoose = require('mongoose');
+      const fakeId = new mongoose.Types.ObjectId();
       const response = await request(app)
         .get(`/api/cars/${fakeId}`)
         .expect(404);
@@ -105,6 +106,10 @@ describe('Car Controller', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
+      // Validation errors may include details
+      if (response.body.details) {
+        expect(Array.isArray(response.body.details)).toBe(true);
+      }
     });
   });
 
@@ -127,7 +132,11 @@ describe('Car Controller', () => {
         .expect(201);
 
       expect(response.body.make).toBe(carData.make);
-      expect(response.body.seller.toString()).toBe(user._id.toString());
+      // seller might be populated or just an ID
+      const sellerId = typeof response.body.seller === 'object' && response.body.seller._id
+        ? response.body.seller._id.toString()
+        : response.body.seller.toString();
+      expect(sellerId).toBe(user._id.toString());
     });
 
     it('should reject car creation without authentication', async () => {
@@ -145,6 +154,9 @@ describe('Car Controller', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body).toHaveProperty('details');
+      expect(Array.isArray(response.body.details)).toBe(true);
     });
   });
 

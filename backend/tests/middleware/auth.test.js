@@ -52,7 +52,8 @@ describe('Auth Middleware', () => {
   });
 
   it('should return 401 if user not found', async () => {
-    const fakeUserId = require('mongoose').Types.ObjectId();
+    const mongoose = require('mongoose');
+    const fakeUserId = new mongoose.Types.ObjectId();
     const token = generateToken(fakeUserId);
     req.header.mockReturnValue(`Bearer ${token}`);
 
@@ -72,6 +73,7 @@ describe('Auth Middleware', () => {
     await auth(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'No token, authorization denied' });
     expect(next).not.toHaveBeenCalled();
   });
 });

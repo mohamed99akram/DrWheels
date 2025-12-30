@@ -133,7 +133,7 @@ const validateUpdateCar = [
 ];
 
 const validateCarId = [
-  param('id')
+  param('carId')
     .isMongoId()
     .withMessage('Invalid car ID'),
   handleValidationErrors

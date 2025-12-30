@@ -62,10 +62,17 @@ describe('Review Controller', () => {
         .set(getAuthHeaders(token))
         .send({ rating: 6, comment: 'Invalid' })
         .expect(400);
+
+      expect(response.body).toHaveProperty('error');
+      // Validation errors may include details
+      if (response.body.details) {
+        expect(Array.isArray(response.body.details)).toBe(true);
+      }
     });
 
     it('should return 404 for non-existent car', async () => {
-      const fakeId = require('mongoose').Types.ObjectId();
+      const mongoose = require('mongoose');
+      const fakeId = new mongoose.Types.ObjectId();
       const response = await request(app)
         .post(`/api/reviews/car/${fakeId}`)
         .set(getAuthHeaders(token))
@@ -161,7 +168,11 @@ describe('Review Controller', () => {
 
       expect(response.body.length).toBe(2);
       response.body.forEach(review => {
-        expect(review.user._id.toString()).toBe(user._id.toString());
+        // getUserReviews populates car, not user, so user is just an ID
+        const userId = typeof review.user === 'object' && review.user._id
+          ? review.user._id.toString()
+          : review.user.toString();
+        expect(userId).toBe(user._id.toString());
       });
     });
   });

@@ -61,7 +61,8 @@ describe('Order Controller', () => {
     });
 
     it('should return 404 for non-existent car', async () => {
-      const fakeId = require('mongoose').Types.ObjectId();
+      const mongoose = require('mongoose');
+      const fakeId = new mongoose.Types.ObjectId();
       const response = await request(app)
         .post('/api/orders')
         .set(getAuthHeaders(buyerToken))

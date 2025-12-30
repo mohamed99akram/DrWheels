@@ -28,8 +28,10 @@ const createTestAdmin = async (overrides = {}) => {
 
 // Generate JWT token for a user
 const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET || 'test-secret-key-for-jwt-tokens', {
-    expiresIn: '7d'
+  // Use the same default as authController for consistency
+  const secret = process.env.JWT_SECRET || 'default-secret-key-change-in-production-min-32-chars';
+  return jwt.sign({ id: userId }, secret, {
+    expiresIn: process.env.JWT_EXPIRE || '7d'
   });
 };
 

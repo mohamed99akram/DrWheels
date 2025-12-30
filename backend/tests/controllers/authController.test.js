@@ -54,6 +54,8 @@ describe('Auth Controller', () => {
 
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toBe('Validation failed');
+      expect(response.body).toHaveProperty('details');
+      expect(Array.isArray(response.body.details)).toBe(true);
     });
 
     it('should reject invalid email', async () => {
@@ -69,6 +71,9 @@ describe('Auth Controller', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body).toHaveProperty('details');
+      expect(Array.isArray(response.body.details)).toBe(true);
     });
 
     it('should reject missing required fields', async () => {
@@ -78,6 +83,8 @@ describe('Auth Controller', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body).toHaveProperty('details');
     });
   });
 
@@ -132,6 +139,8 @@ describe('Auth Controller', () => {
         .expect(400);
 
       expect(response.body).toHaveProperty('error');
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body).toHaveProperty('details');
     });
   });
 

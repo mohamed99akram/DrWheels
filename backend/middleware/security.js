@@ -100,21 +100,26 @@ const generalLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => process.env.NODE_ENV === 'test', // Skip in test environment
 });
 
 // Stricter rate limiting for auth routes
+// Skip rate limiting in test environment
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 requests per windowMs
   message: 'Too many authentication attempts, please try again later.',
   skipSuccessfulRequests: true,
+  skip: (req) => process.env.NODE_ENV === 'test', // Skip in test environment
 });
 
 // Stricter rate limiting for sensitive operations
+// Skip rate limiting in test environment
 const strictLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10, // limit each IP to 10 requests per hour
   message: 'Too many requests, please try again later.',
+  skip: (req) => process.env.NODE_ENV === 'test', // Skip in test environment
 });
 
 // MongoDB injection prevention

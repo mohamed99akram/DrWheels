@@ -128,10 +128,15 @@ export const sanitizeUrl = (url) => {
   if (!url || typeof url !== 'string') return null;
   
   try {
-    const urlObj = new URL(url, window.location.origin);
+    // Get base URL - use window.location.origin if available, otherwise use a default
+    const baseUrl = (typeof window !== 'undefined' && window.location && window.location.origin) 
+      ? window.location.origin 
+      : 'http://localhost:3000';
+    
+    const urlObj = new URL(url, baseUrl);
     // Only allow same origin or whitelisted domains
     const allowedOrigins = [
-      window.location.origin,
+      baseUrl,
       process.env.REACT_APP_API_URL || 'http://localhost:4000'
     ];
     
@@ -141,7 +146,10 @@ export const sanitizeUrl = (url) => {
     
     return null;
   } catch (error) {
-    console.error('Invalid URL:', error);
+    // Silently fail in test environment
+    if (process.env.NODE_ENV !== 'test') {
+      console.error('Invalid URL:', error);
+    }
     return null;
   }
 };

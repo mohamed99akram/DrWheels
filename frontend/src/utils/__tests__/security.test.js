@@ -64,8 +64,12 @@ describe('Security Utils', () => {
 
   describe('secureStorage', () => {
     beforeEach(() => {
-      localStorage.clear();
       jest.clearAllMocks();
+      // Reset localStorage mock
+      localStorage.getItem.mockReturnValue(null);
+      localStorage.setItem.mockClear();
+      localStorage.removeItem.mockClear();
+      localStorage.clear.mockClear();
     });
 
     it('should set item in localStorage', () => {
@@ -109,15 +113,40 @@ describe('Security Utils', () => {
   });
 
   describe('sanitizeUrl', () => {
+    beforeEach(() => {
+      // Mock window.location.origin for tests
+      Object.defineProperty(window, 'location', {
+        value: {
+          origin: 'http://localhost:3000',
+          protocol: 'http:',
+          host: 'localhost:3000'
+        },
+        writable: true
+      });
+    });
+
     it('should allow same origin URLs', () => {
-      const url = window.location.origin + '/test';
-      expect(sanitizeUrl(url)).toBeTruthy();
+      const url = 'http://localhost:3000/test';
+      const result = sanitizeUrl(url);
+      expect(result).toBeTruthy();
+      expect(result).toContain('/test');
+    });
+
+    it('should allow API URL', () => {
+      const url = 'http://localhost:4000/api/test';
+      const result = sanitizeUrl(url);
+      expect(result).toBeTruthy();
     });
 
     it('should reject invalid URLs', () => {
       expect(sanitizeUrl('javascript:alert(1)')).toBeNull();
       expect(sanitizeUrl('')).toBeNull();
       expect(sanitizeUrl(null)).toBeNull();
+    });
+
+    it('should reject external URLs', () => {
+      expect(sanitizeUrl('https://evil.com')).toBeNull();
+      expect(sanitizeUrl('http://malicious.com')).toBeNull();
     });
   });
 

@@ -21,10 +21,51 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Mock localStorage
 const localStorageMock = {
-  getItem: jest.fn(),
+  getItem: jest.fn(() => null),
   setItem: jest.fn(),
   removeItem: jest.fn(),
   clear: jest.fn(),
 };
 global.localStorage = localStorageMock;
+
+// Mock axios to avoid ES module issues
+// This is a fallback - individual test files should mock axios as needed
+if (typeof jest !== 'undefined') {
+  try {
+    jest.mock('axios', () => {
+      const mockAxiosInstance = {
+        defaults: {
+          baseURL: 'http://localhost:4000/api',
+          timeout: 10000,
+          headers: {}
+        },
+        interceptors: {
+          request: {
+            use: jest.fn(),
+            handlers: []
+          },
+          response: {
+            use: jest.fn(),
+            handlers: []
+          }
+        },
+        get: jest.fn(() => Promise.resolve({ data: {} })),
+        post: jest.fn(() => Promise.resolve({ data: {} })),
+        put: jest.fn(() => Promise.resolve({ data: {} })),
+        patch: jest.fn(() => Promise.resolve({ data: {} })),
+        delete: jest.fn(() => Promise.resolve({ data: {} }))
+      };
+      
+      return {
+        __esModule: true,
+        default: {
+          create: jest.fn(() => mockAxiosInstance),
+          ...mockAxiosInstance
+        }
+      };
+    });
+  } catch (e) {
+    // Mock might already be set up in individual test files
+  }
+}
 

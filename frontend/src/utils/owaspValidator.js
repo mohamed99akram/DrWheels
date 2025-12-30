@@ -86,8 +86,10 @@ export const owaspRules = {
     const sqlPatterns = [
       /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE)\b)/i,
       /(--|#|\/\*|\*\/|;)/,
-      /(\b(OR|AND)\s+\d+\s*=\s*\d+)/i,
-      /(\bUNION\b.*\bSELECT\b)/i
+      /(\b(OR|AND)\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?)/i, // Match OR '1'='1' or OR 1=1
+      /(\bUNION\b.*\bSELECT\b)/i,
+      /(\bOR\b.*['"]1['"]\s*=\s*['"]1['"])/i, // Match OR '1'='1'
+      /(\bAND\b.*['"]1['"]\s*=\s*['"]1['"])/i // Match AND '1'='1'
     ];
     
     if (sqlPatterns.some(pattern => pattern.test(value))) {
