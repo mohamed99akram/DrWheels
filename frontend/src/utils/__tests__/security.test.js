@@ -65,11 +65,8 @@ describe('Security Utils', () => {
   describe('secureStorage', () => {
     beforeEach(() => {
       jest.clearAllMocks();
-      // Reset localStorage mock
-      localStorage.getItem.mockReturnValue(null);
-      localStorage.setItem.mockClear();
-      localStorage.removeItem.mockClear();
-      localStorage.clear.mockClear();
+      // Reset localStorage mock - clear the internal store
+      localStorage.clear();
     });
 
     it('should set item in localStorage', () => {
@@ -78,7 +75,7 @@ describe('Security Utils', () => {
     });
 
     it('should get item from localStorage', () => {
-      localStorage.getItem.mockReturnValue('value');
+      localStorage.setItem('test', 'value');
       const result = secureStorage.getItem('test');
       expect(localStorage.getItem).toHaveBeenCalledWith('test');
       expect(result).toBe('value');
@@ -133,9 +130,21 @@ describe('Security Utils', () => {
     });
 
     it('should allow API URL', () => {
+      // Set environment variable for API URL
+      const originalEnv = process.env.REACT_APP_API_URL;
+      process.env.REACT_APP_API_URL = 'http://localhost:4000';
+      
       const url = 'http://localhost:4000/api/test';
       const result = sanitizeUrl(url);
       expect(result).toBeTruthy();
+      expect(result).toContain('localhost:4000');
+      
+      // Restore original env
+      if (originalEnv) {
+        process.env.REACT_APP_API_URL = originalEnv;
+      } else {
+        delete process.env.REACT_APP_API_URL;
+      }
     });
 
     it('should reject invalid URLs', () => {

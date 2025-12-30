@@ -1,30 +1,34 @@
 // Mock axios before importing api
 jest.mock('axios', () => {
-  const axios = jest.requireActual('axios');
+  const mockAxiosInstance = {
+    defaults: {
+      baseURL: 'http://localhost:4000/api',
+      timeout: 10000,
+      headers: {}
+    },
+    interceptors: {
+      request: {
+        use: jest.fn(),
+        handlers: []
+      },
+      response: {
+        use: jest.fn(),
+        handlers: []
+      }
+    },
+    get: jest.fn(() => Promise.resolve({ data: {} })),
+    post: jest.fn(() => Promise.resolve({ data: {} })),
+    put: jest.fn(() => Promise.resolve({ data: {} })),
+    patch: jest.fn(() => Promise.resolve({ data: {} })),
+    delete: jest.fn(() => Promise.resolve({ data: {} }))
+  };
+  
   return {
-    ...axios,
-    create: jest.fn(() => ({
-      defaults: {
-        baseURL: 'http://localhost:4000/api',
-        timeout: 10000,
-        headers: {}
-      },
-      interceptors: {
-        request: {
-          use: jest.fn(),
-          handlers: []
-        },
-        response: {
-          use: jest.fn(),
-          handlers: []
-        }
-      },
-      get: jest.fn(() => Promise.resolve({ data: {} })),
-      post: jest.fn(() => Promise.resolve({ data: {} })),
-      put: jest.fn(() => Promise.resolve({ data: {} })),
-      patch: jest.fn(() => Promise.resolve({ data: {} })),
-      delete: jest.fn(() => Promise.resolve({ data: {} }))
-    }))
+    __esModule: true,
+    default: {
+      create: jest.fn(() => mockAxiosInstance),
+      ...mockAxiosInstance
+    }
   };
 });
 

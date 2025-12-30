@@ -151,6 +151,10 @@ jobs:
   backend-security-scan:
     name: Backend Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -245,6 +249,10 @@ jobs:
   frontend-security-scan:
     name: Frontend Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

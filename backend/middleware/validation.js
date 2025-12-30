@@ -133,7 +133,7 @@ const validateUpdateCar = [
 ];
 
 const validateCarId = [
-  param('carId')
+  param('id')
     .isMongoId()
     .withMessage('Invalid car ID'),
   handleValidationErrors
@@ -193,8 +193,10 @@ const validateCreateReview = [
   body('comment')
     .optional()
     .trim()
-    .isLength({ max: 1000 })
-    .withMessage('Comment must be less than 1000 characters')
+    .notEmpty()
+    .withMessage('Comment cannot be empty if provided')
+    .isLength({ min: 1, max: 1000 })
+    .withMessage('Comment must be between 1 and 1000 characters')
     .escape(),
   handleValidationErrors
 ];

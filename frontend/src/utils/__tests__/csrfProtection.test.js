@@ -7,19 +7,13 @@ import {
   verifyCSRFToken
 } from '../csrfProtection';
 
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-};
-
-global.sessionStorage = sessionStorageMock;
+// Use the sessionStorage mock from setupTests
+const sessionStorageMock = global.sessionStorage;
 
 describe('CSRF Protection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    sessionStorage.clear();
     sessionStorageMock.getItem.mockReturnValue(null);
   });
 
