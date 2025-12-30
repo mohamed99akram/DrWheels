@@ -4,7 +4,7 @@
 FROM node:18-alpine AS build
 
 # Build-time argument (NOT a secret)
-ARG REACT_APP_API_URL
+ARG REACT_APP_API_URL=https://drwheels-api.chickenkiller.com/api
 ENV REACT_APP_API_URL=${REACT_APP_API_URL}
 
 # Set working directory
@@ -33,8 +33,8 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copy built artifacts only
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Use non-root user
-USER nginx
+# # Use non-root user
+# USER nginx
 
 # Expose container port (documentation only)
 EXPOSE 80
