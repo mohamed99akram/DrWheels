@@ -5,6 +5,9 @@ on:
     branches: [ master, develop, feature/* ]
   pull_request:
     branches: [ master, develop ]
+permissions:
+  contents: read
+  pull-requests: write
 
 env:
   NODE_VERSION: '18'
@@ -31,6 +34,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -111,6 +116,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -158,6 +165,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -230,13 +239,15 @@ jobs:
       - name: Secrets Scan (Gitleaks)
         uses: gitleaks/gitleaks-action@v2
         with:
-          args: detect --redact --verbose \
-            --config-path=.github/gitleaks.toml \
-            --report-format=sarif --report-path=results.sarif \
-            --exit-code=1
+          fail: true
+          config-path: .github/gitleaks.toml
+          verbose: true
+          exit-code: 1
+          commit: ${{ github.sha }}
+          repository: ${{ github.repository }}
+          branch: ${{ github.ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 
       # IaC Security Scanning
       - name: Infrastructure as Code Security Scan (Checkov)
@@ -273,6 +284,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -362,6 +375,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -470,6 +485,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       
       - name: Deploy to Development
         run: |
@@ -492,6 +509,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Select image tags for staging deployment
         shell: bash
@@ -615,7 +634,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+        with:
+          fetch-depth: 0
       - name: Verify staging environment is accessible
         env:
           STAGING_URL: ${{ secrets.STAGING_ENVIRONMENT_URL || 'https://staging.drwheels.com' }}
@@ -682,6 +702,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       
       - name: Deploy to Production
         run: |
@@ -731,6 +753,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       
       - name: Run Smoke Tests
         run: |
