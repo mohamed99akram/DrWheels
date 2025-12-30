@@ -487,12 +487,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Select image tags for staging deployment
+        shell: bash
+        run: |
+          echo "BACKEND_IMAGE_REF=$(echo '${{ needs.build-images.outputs.backend-image }}' | head -n 1)" >> $GITHUB_ENV
+          echo "FRONTEND_IMAGE_REF=$(echo '${{ needs.build-images.outputs.frontend-image }}' | head -n 1)" >> $GITHUB_ENV
       
       - name: Deploy to Staging (GitOps)
         run: |
           echo "Triggering GitOps deployment to staging..."
-          echo "Backend Image: ${{ needs.build-images.outputs.backend-image }}"
-          echo "Frontend Image: ${{ needs.build-images.outputs.frontend-image }}"
+          echo "Backend Image: $BACKEND_IMAGE_REF"
+          echo "Frontend Image: $FRONTEND_IMAGE_REF"
           
           # Update GitOps repository with new image tags
           git config --global user.name "GitHub Actions"
@@ -504,12 +510,12 @@ jobs:
           
           # Update backend image tag
           if [ -f drwheels/backend-deployment.yaml ]; then
-            sed -i "s|image: .*/backend:.*|image: ${{ needs.build-images.outputs.backend-image }}|g" drwheels/backend-deployment.yaml
+            sed -i "s|image: .*/backend:.*|image: $BACKEND_IMAGE_REF|g" drwheels/backend-deployment.yaml
           fi
           
           # Update frontend image tag
           if [ -f drwheels/frontend-deployment.yaml ]; then
-            sed -i "s|image: .*/frontend:.*|image: ${{ needs.build-images.outputs.frontend-image }}|g" drwheels/frontend-deployment.yaml
+            sed -i "s|image: .*/frontend:.*|image: $FRONTEND_IMAGE_REF|g" drwheels/frontend-deployment.yaml
           fi
           
           # Commit and push changes to trigger GitOps
@@ -518,12 +524,6 @@ jobs:
           git push || exit 0
           
           echo "GitOps deployment triggered. Waiting for Azure to deploy..."
-      
-      - name: Wait for GitOps deployment
-        run: |
-          echo "Waiting for Azure GitOps to complete deployment..."
-          echo "This may take 3-5 minutes for GitOps to sync and deploy..."
-          sleep 180  # Wait 3 minutes for GitOps to start
       
       - name: Wait for staging environment to be ready
         env:
