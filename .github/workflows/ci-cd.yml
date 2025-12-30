@@ -248,7 +248,7 @@ jobs:
         working-directory: ./backend
         run: |
           npm install -g @cyclonedx/bom
-          npx @cyclonedx/bom -o sbom-backend.xml
+          cyclonedx-bom -o sbom-backend.xml
       
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v4
@@ -328,7 +328,7 @@ jobs:
         working-directory: ./frontend
         run: |
           npm install -g @cyclonedx/bom
-          npx @cyclonedx/bom -o sbom-frontend.xml
+          cyclonedx-bom -o sbom-frontend.xml
       
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v4
