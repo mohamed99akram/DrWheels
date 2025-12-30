@@ -492,9 +492,27 @@ jobs:
       - name: Select image tags for staging deployment
         shell: bash
         run: |
+          set -euo pipefail
+
+          if [ -z "${DOCKER_REGISTRY:-}" ]; then
+            echo "ERROR: DOCKER_REGISTRY env var is empty (check secrets.DOCKER_REGISTRY)"
+            exit 1
+          fi
+
           SHORT_SHA="${GITHUB_SHA::7}"
-          echo "BACKEND_IMAGE_REF=${DOCKER_REGISTRY}/devsecopscourse/drwheels/backend:${GITHUB_REF_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
-          echo "FRONTEND_IMAGE_REF=${DOCKER_REGISTRY}/devsecopscourse/drwheels/frontend:${GITHUB_REF_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
+          BACKEND_IMAGE_REF="${DOCKER_REGISTRY}/devsecopscourse/drwheels/backend:${GITHUB_REF_NAME}-${SHORT_SHA}"
+          FRONTEND_IMAGE_REF="${DOCKER_REGISTRY}/devsecopscourse/drwheels/frontend:${GITHUB_REF_NAME}-${SHORT_SHA}"
+
+          if [ -z "$BACKEND_IMAGE_REF" ] || [ -z "$FRONTEND_IMAGE_REF" ]; then
+            echo "ERROR: Computed image refs are empty"
+            exit 1
+          fi
+
+          echo "Backend image ref (computed): $BACKEND_IMAGE_REF"
+          echo "Frontend image ref (computed): $FRONTEND_IMAGE_REF"
+
+          echo "BACKEND_IMAGE_REF=$BACKEND_IMAGE_REF" >> $GITHUB_ENV
+          echo "FRONTEND_IMAGE_REF=$FRONTEND_IMAGE_REF" >> $GITHUB_ENV
       
       - name: Deploy to Staging (GitOps)
         run: |
