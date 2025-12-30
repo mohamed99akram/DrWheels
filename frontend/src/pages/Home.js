@@ -28,7 +28,7 @@ const Home = () => {
       {/* Hero Section */}
       <Box textAlign="center" py={8} sx={{ bgcolor: 'primary.main', color: 'white', borderRadius: 2, mb: 6 }}>
         <Typography variant="h2" component="h1" gutterBottom>
-          Welcome to Dr Wheels
+          Welcome to Dr Wheels, your cars advisor
         </Typography>
         <Typography variant="h5" paragraph>
           Your Complete Vehicle Marketplace
