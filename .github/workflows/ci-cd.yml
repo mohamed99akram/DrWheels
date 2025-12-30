@@ -530,7 +530,7 @@ jobs:
           
           # Update backend image tag
           if [ -f drwheels/backend-deployment.yaml ]; then
-            sed -i -E "s|image:\\s*.*\\/backend([:@]).*|image: $BACKEND_IMAGE_REF|g" drwheels/backend-deployment.yaml
+            sed -i -E "0,/^[[:space:]]*image:/s|^([[:space:]]*)image:.*|\\1image: $BACKEND_IMAGE_REF|" drwheels/backend-deployment.yaml
             echo "Updated backend deployment manifest:"
             grep -n "image:" -n drwheels/backend-deployment.yaml | head -n 20 || true
           else
@@ -540,7 +540,7 @@ jobs:
           
           # Update frontend image tag
           if [ -f drwheels/frontend-deployment.yaml ]; then
-            sed -i -E "s|image:\\s*.*\\/frontend([:@]).*|image: $FRONTEND_IMAGE_REF|g" drwheels/frontend-deployment.yaml
+            sed -i -E "0,/^[[:space:]]*image:/s|^([[:space:]]*)image:.*|\\1image: $FRONTEND_IMAGE_REF|" drwheels/frontend-deployment.yaml
             echo "Updated frontend deployment manifest:"
             grep -n "image:" -n drwheels/frontend-deployment.yaml | head -n 20 || true
           else
