@@ -560,6 +560,94 @@ jobs:
           git push
           
           echo "GitOps deployment triggered. Waiting for Azure to deploy..."
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Monitor staging rollout (backend + frontend)
+        shell: bash
+        env:
+          KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+          STAGING_NAMESPACE: ${{ secrets.STAGING_NAMESPACE }}
+          BACKEND_DEPLOYMENT: ${{ secrets.STAGING_BACKEND_DEPLOYMENT }}
+          FRONTEND_DEPLOYMENT: ${{ secrets.STAGING_FRONTEND_DEPLOYMENT }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${KUBECONFIG_B64:-}" ]; then
+            echo "KUBECONFIG_B64 not set; skipping kubectl rollout monitoring."
+            exit 0
+          fi
+
+          if [ -z "${STAGING_NAMESPACE:-}" ]; then
+            STAGING_NAMESPACE="default"
+          fi
+          if [ -z "${BACKEND_DEPLOYMENT:-}" ]; then
+            BACKEND_DEPLOYMENT="backend"
+          fi
+          if [ -z "${FRONTEND_DEPLOYMENT:-}" ]; then
+            FRONTEND_DEPLOYMENT="frontend"
+          fi
+
+          echo "Writing kubeconfig..."
+          mkdir -p "$HOME/.kube"
+          echo "$KUBECONFIG_B64" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+          echo "Cluster info (best-effort):"
+          kubectl version --client=true
+          kubectl cluster-info || true
+
+          echo "Current images before rollout check:"
+          kubectl -n "$STAGING_NAMESPACE" get deploy "$BACKEND_DEPLOYMENT" "$FRONTEND_DEPLOYMENT" -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{range .spec.template.spec.containers[*]}{.image}{"\n"}{end}{end}' || true
+
+          echo "Waiting for backend rollout: $STAGING_NAMESPACE/$BACKEND_DEPLOYMENT"
+          kubectl -n "$STAGING_NAMESPACE" rollout status "deployment/$BACKEND_DEPLOYMENT" --timeout=10m
+
+          echo "Waiting for frontend rollout: $STAGING_NAMESPACE/$FRONTEND_DEPLOYMENT"
+          kubectl -n "$STAGING_NAMESPACE" rollout status "deployment/$FRONTEND_DEPLOYMENT" --timeout=10m
+
+          echo "Pods summary:"
+          kubectl -n "$STAGING_NAMESPACE" get pods -o wide
+
+        continue-on-error: true
+
+      - name: Dump staging pods/events (on rollout issues)
+        if: always()
+        shell: bash
+        env:
+          KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+          STAGING_NAMESPACE: ${{ secrets.STAGING_NAMESPACE }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${KUBECONFIG_B64:-}" ]; then
+            exit 0
+          fi
+          if [ -z "${STAGING_NAMESPACE:-}" ]; then
+            STAGING_NAMESPACE="default"
+          fi
+
+          mkdir -p "$HOME/.kube"
+          echo "$KUBECONFIG_B64" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+          echo "Recent events:"
+          kubectl -n "$STAGING_NAMESPACE" get events --sort-by=.lastTimestamp | tail -n 50 || true
+
+          echo "Pods (describe failing ones):"
+          kubectl -n "$STAGING_NAMESPACE" get pods -o wide || true
+          for p in $(kubectl -n "$STAGING_NAMESPACE" get pods --no-headers 2>/dev/null | awk '{print $1}'); do
+            PHASE=$(kubectl -n "$STAGING_NAMESPACE" get pod "$p" -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+            READY=$(kubectl -n "$STAGING_NAMESPACE" get pod "$p" -o jsonpath='{.status.containerStatuses[0].ready}' 2>/dev/null || echo "")
+            if [ "$PHASE" != "Running" ] || [ "$READY" != "true" ]; then
+              echo "--- kubectl describe pod/$p ---"
+              kubectl -n "$STAGING_NAMESPACE" describe pod "$p" || true
+              echo "--- kubectl logs pod/$p (tail) ---"
+              kubectl -n "$STAGING_NAMESPACE" logs "$p" --all-containers --tail=200 || true
+            fi
+          done
+        continue-on-error: true
       
       - name: Wait for staging environment to be ready
         env:
@@ -567,6 +655,9 @@ jobs:
         run: |
           echo "Checking if staging environment is ready..."
           echo "Staging URL: $STAGING_URL"
+          echo "Resolving staging host (best-effort)..."
+          STAGING_HOST=$(echo "$STAGING_URL" | sed -E 's#^https?://##' | cut -d/ -f1)
+          getent hosts "$STAGING_HOST" || true
           
           MAX_ATTEMPTS=30
           ATTEMPT=0
@@ -575,13 +666,30 @@ jobs:
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             ATTEMPT=$((ATTEMPT + 1))
             echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking staging health..."
+            echo "Backend check: $STAGING_URL/api/health"
+            BACKEND_STATUS=$(curl -s -o backend_body.txt -w "%{http_code}" -m 10 "$STAGING_URL/api/health" || echo "000")
+            echo "Backend HTTP status: $BACKEND_STATUS"
+            head -c 300 backend_body.txt 2>/dev/null || true
+            echo ""
             
             # Check backend health
-            if curl -f -s -m 5 "$STAGING_URL/api/health" > /dev/null 2>&1; then
+            if [ "$BACKEND_STATUS" = "200" ]; then
               echo "✅ Backend is ready!"
               
               # Check frontend health
-              if curl -f -s -m 5 "$STAGING_URL/health" > /dev/null 2>&1 || curl -f -s -m 5 "$STAGING_URL" > /dev/null 2>&1; then
+              echo "Frontend check: $STAGING_URL/health"
+              FRONTEND_HEALTH_STATUS=$(curl -s -o frontend_health_body.txt -w "%{http_code}" -m 10 "$STAGING_URL/health" || echo "000")
+              echo "Frontend /health HTTP status: $FRONTEND_HEALTH_STATUS"
+              head -c 300 frontend_health_body.txt 2>/dev/null || true
+              echo ""
+
+              echo "Frontend check: $STAGING_URL"
+              FRONTEND_ROOT_STATUS=$(curl -s -o frontend_root_body.txt -w "%{http_code}" -m 10 "$STAGING_URL" || echo "000")
+              echo "Frontend / HTTP status: $FRONTEND_ROOT_STATUS"
+              head -c 300 frontend_root_body.txt 2>/dev/null || true
+              echo ""
+
+              if [ "$FRONTEND_HEALTH_STATUS" = "200" ] || [ "$FRONTEND_ROOT_STATUS" = "200" ]; then
                 echo "✅ Frontend is ready!"
                 echo "✅ Staging environment is fully deployed and ready for DAST scan"
                 exit 0
