@@ -1,7 +1,7 @@
 ############################
 # Stage 1: Build
 ############################
-FROM node:18-alpine AS build
+FROM node:25-alpine AS build
 
 # Build-time argument (NOT a secret)
 ARG REACT_APP_API_URL=https://drwheels-api.chickenkiller.com/api
