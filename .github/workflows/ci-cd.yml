@@ -5,6 +5,9 @@ on:
     branches: [ master, develop, feature/* ]
   pull_request:
     branches: [ master, develop ]
+permissions:
+  contents: read
+  pull-requests: write
 
 env:
   NODE_VERSION: '18'
@@ -233,6 +236,8 @@ jobs:
           commit: ${{ github.sha }}
           repository: ${{ github.repository }}
           branch: ${{ github.ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # IaC Security Scanning
       - name: Infrastructure as Code Security Scan (Checkov)
