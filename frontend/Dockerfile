@@ -14,7 +14,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install dependencies in clean, reproducible way
-RUN npm ci --omit=dev
+RUN npm ci
 
 # Copy application source
 COPY . .
