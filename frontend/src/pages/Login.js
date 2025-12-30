@@ -3,29 +3,53 @@ import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Paper,
-  TextField,
   Button,
   Typography,
   Box,
   Alert,
 } from '@mui/material';
 import { AuthContext } from '../context/AuthContext';
+import SecureInput from '../components/SecureInput';
+import { validateAndSanitize, validationSchemas } from '../utils/owaspValidator';
+import { checkRateLimit, rateLimits } from '../utils/rateLimiter';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
+
+    // Check rate limit
+    const rateLimit = checkRateLimit('login', rateLimits.auth);
+    if (!rateLimit.allowed) {
+      setError(`Too many login attempts. Please wait ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.`);
+      return;
+    }
+
+    // Validate and sanitize input
+    const validation = validateAndSanitize(
+      { email, password },
+      validationSchemas.login
+    );
+
+    if (!validation.isValid) {
+      setFieldErrors(validation.errors);
+      setError('Please fix the errors below');
+      return;
+    }
+
     try {
-      await login(email, password);
+      await login(validation.sanitized.email, validation.sanitized.password);
       navigate('/cars');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.response?.data?.error || err.message || 'Login failed');
     }
   };
 
@@ -41,23 +65,31 @@ const Login = () => {
           </Alert>
         )}
         <Box component="form" onSubmit={handleSubmit}>
-          <TextField
+          <SecureInput
             fullWidth
+            name="email"
             label="Email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             margin="normal"
             required
+            schema={validationSchemas.login}
+            error={!!fieldErrors.email}
+            helperText={fieldErrors.email}
           />
-          <TextField
+          <SecureInput
             fullWidth
+            name="password"
             label="Password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             margin="normal"
             required
+            schema={validationSchemas.login}
+            error={!!fieldErrors.password}
+            helperText={fieldErrors.password}
           />
           <Button
             type="submit"

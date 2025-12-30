@@ -2,7 +2,11 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
+  const secret = process.env.JWT_SECRET || 'default-secret-key-change-in-production-min-32-chars';
+  if (!process.env.JWT_SECRET) {
+    console.warn('⚠️  JWT_SECRET not set, using default. Set JWT_SECRET in .env for production!');
+  }
+  return jwt.sign({ id }, secret, {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
 };

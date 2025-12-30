@@ -4,13 +4,15 @@ import {
   Container,
   Paper,
   Typography,
-  TextField,
   Button,
   Box,
   Grid,
-  MenuItem,
+  Alert,
 } from '@mui/material';
 import api from '../services/api';
+import SecureInput from '../components/SecureInput';
+import { validateAndSanitize, validationSchemas } from '../utils/owaspValidator';
+import { checkRateLimit, rateLimits } from '../utils/rateLimiter';
 
 const CreateCar = () => {
   const navigate = useNavigate();
@@ -26,9 +28,17 @@ const CreateCar = () => {
   });
   const [imageUrls, setImageUrls] = useState(['']);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors({ ...fieldErrors, [name]: null });
+    }
   };
 
   const handleImageUrlChange = (index, value) => {
@@ -44,13 +54,33 @@ const CreateCar = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setFieldErrors({});
     setLoading(true);
 
+    // Check rate limit
+    const rateLimit = checkRateLimit('create_car', rateLimits.form);
+    if (!rateLimit.allowed) {
+      setError(`Too many submissions. Please wait ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.`);
+      setLoading(false);
+      return;
+    }
+
+    // Validate and sanitize input
+    const validation = validateAndSanitize(formData, validationSchemas.car);
+
+    if (!validation.isValid) {
+      setFieldErrors(validation.errors);
+      setError('Please fix the errors below');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await api.post('/cars', formData);
+      await api.post('/cars', validation.sanitized);
       navigate('/cars');
-    } catch (error) {
-      alert(error.response?.data?.error || 'Error creating car listing');
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Error creating car listing');
     } finally {
       setLoading(false);
     }
@@ -63,81 +93,104 @@ const CreateCar = () => {
           List Your Vehicle
         </Typography>
 
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <SecureInput
                 fullWidth
                 required
-                label="Make"
                 name="make"
+                label="Make"
                 value={formData.make}
                 onChange={handleChange}
+                schema={validationSchemas.car}
+                error={!!fieldErrors.make}
+                helperText={fieldErrors.make}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <SecureInput
                 fullWidth
                 required
-                label="Model"
                 name="model"
+                label="Model"
                 value={formData.model}
                 onChange={handleChange}
+                schema={validationSchemas.car}
+                error={!!fieldErrors.model}
+                helperText={fieldErrors.model}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <SecureInput
                 fullWidth
                 required
                 type="number"
-                label="Year"
                 name="year"
+                label="Year"
                 value={formData.year}
                 onChange={handleChange}
-                inputProps={{ min: 1900, max: new Date().getFullYear() + 1 }}
+                schema={validationSchemas.car}
+                error={!!fieldErrors.year}
+                helperText={fieldErrors.year}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <SecureInput
                 fullWidth
                 required
                 type="number"
-                label="Price ($)"
                 name="price"
+                label="Price ($)"
                 value={formData.price}
                 onChange={handleChange}
-                inputProps={{ min: 0 }}
+                schema={validationSchemas.car}
+                error={!!fieldErrors.price}
+                helperText={fieldErrors.price}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <SecureInput
                 fullWidth
                 type="number"
-                label="Mileage"
                 name="mileage"
+                label="Mileage"
                 value={formData.mileage}
                 onChange={handleChange}
-                inputProps={{ min: 0 }}
+                schema={validationSchemas.car}
+                error={!!fieldErrors.mileage}
+                helperText={fieldErrors.mileage}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
+              <SecureInput
                 fullWidth
-                label="Color"
                 name="color"
+                label="Color"
                 value={formData.color}
                 onChange={handleChange}
+                schema={validationSchemas.car}
+                error={!!fieldErrors.color}
+                helperText={fieldErrors.color}
               />
             </Grid>
             <Grid item xs={12}>
-              <TextField
+              <SecureInput
                 fullWidth
                 multiline
                 rows={4}
-                label="Description"
                 name="description"
+                label="Description"
                 value={formData.description}
                 onChange={handleChange}
+                schema={validationSchemas.car}
+                error={!!fieldErrors.description}
+                helperText={fieldErrors.description}
               />
             </Grid>
             <Grid item xs={12}>
@@ -145,12 +198,15 @@ const CreateCar = () => {
                 Images (URLs)
               </Typography>
               {imageUrls.map((url, index) => (
-                <TextField
+                <SecureInput
                   key={index}
                   fullWidth
+                  name={`image_${index}`}
                   label={`Image URL ${index + 1}`}
+                  type="url"
                   value={url}
                   onChange={(e) => handleImageUrlChange(index, e.target.value)}
+                  schema={validationSchemas.car}
                   sx={{ mb: 2 }}
                 />
               ))}

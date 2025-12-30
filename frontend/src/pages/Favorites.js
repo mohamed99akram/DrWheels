@@ -11,7 +11,7 @@ import {
   Rating,
   Chip,
 } from '@mui/material';
-import { Favorite, Delete } from '@mui/icons-material';
+import { Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';

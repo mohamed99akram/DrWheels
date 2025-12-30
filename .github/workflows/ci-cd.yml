@@ -2,110 +2,601 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ master, develop ]
+    branches: [ master, develop, feature/* ]
   pull_request:
     branches: [ master, develop ]
 
+env:
+  NODE_VERSION: '18'
+  DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+
+# ============================================
+# STAGE 1: BUILD & TEST
+# ============================================
 jobs:
-  # backend-test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-      
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: '18'
-  #         cache: 'npm'
-  #         cache-dependency-path: backend/package-lock.json
-      
-  #     - name: Install dependencies
-  #       working-directory: ./backend
-  #       run: npm ci
-      
-  #     - name: Run tests
-  #       working-directory: ./backend
-  #       run: npm test
-  #       env:
-  #         NODE_ENV: test
-  #         MONGODB_URI: mongodb://localhost:27017/drwheels-test
-  #         JWT_SECRET: test-secret
-
-  # frontend-test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-      
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: '18'
-  #         cache: 'npm'
-  #         cache-dependency-path: frontend/package-lock.json
-      
-  #     - name: Install dependencies
-  #       working-directory: ./frontend
-  #       run: npm ci
-      
-  #     - name: Run tests
-  #       working-directory: ./frontend
-  #       run: npm test -- --watchAll=false
-  #       env:
-  #         CI: true
-
-  # mobile-test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     
-  #     - name: Setup Flutter
-  #       uses: subosito/flutter-action@v2
-  #       with:
-  #         flutter-version: '3.0.0'
-  #     
-  #     - name: Install dependencies
-  #       working-directory: ./mobile
-  #       run: flutter pub get
-  #     
-  #     - name: Run tests
-  #       working-directory: ./mobile
-  #       run: flutter test
-
-  build:
-    # needs: [backend-test, frontend-test]
+  # Backend Tests
+  backend-tests:
+    name: Backend Tests
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
+    services:
+      mongo:
+        image: mongo:6
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'" 
+          --health-interval 10s 
+          --health-timeout 5s 
+          --health-retries 5
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Wait for MongoDB
+        run: sleep 15
+      
+      - name: Run unit tests
+        working-directory: ./backend
+        run: npm run test:ci
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://localhost:27017/drwheels-test
+          JWT_SECRET: test-secret-key-for-jwt-tokens-in-ci
+          JWT_EXPIRE: 7d
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+          fail_ci_if_error: false
+
+  # Frontend Tests
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: npm run lint
+        continue-on-error: true
+      
+      - name: Run unit tests
+        working-directory: ./frontend
+        run: npm run test:ci
+        env:
+          CI: true
+          REACT_APP_API_URL: http://localhost:4000/api
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+          fail_ci_if_error: false
+
+# ============================================
+# STAGE 2: SECURITY SCANNING
+# ============================================
+  backend-security-scan:
+    name: Backend Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      # Static Code Analysis
+      - name: ESLint Security Scan
+        working-directory: ./backend
+        run: |
+          npx eslint . \
+            --config .eslintrc.security.js \
+            --max-warnings=0 \
+            --format json \
+            --output-file eslint-report.json || true
+      
+      - name: Upload ESLint results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: backend-eslint-report
+          path: backend/eslint-report.json
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          config-file: .github/codeql/codeql-config.yml
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      # Dependency Scanning
+      - name: Dependency & License Scan (Anchore)
+        uses: anchore/scan-action@v3
+        with:
+          path: ./backend
+          fail-build: true
+          severity-cutoff: high
+      
+      - name: Snyk Dependency & License Scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+        continue-on-error: true
+
+      # Secrets Scanning
+      - name: Secrets Scan (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          fail: true
+          config-path: .github/gitleaks.toml
+          verbose: true
+          exit-code: 1
+          commit: ${{ github.sha }}
+          repository: ${{ github.repository }}
+          branch: ${{ github.ref }}
+
+      # IaC Security Scanning
+      - name: Infrastructure as Code Security Scan (Checkov)
+        uses: bridgecrewio/checkov-action@v8
+        with:
+          directory: ./terraform
+          framework: terraform
+          soft-fail: true
+        continue-on-error: true
+
+      # SBOM Generation
+      - name: Generate Backend SBOM
+        working-directory: ./backend
+        run: |
+          npm install -g @cyclonedx/bom
+          npx @cyclonedx/bom -o sbom-backend.xml
+      
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-sbom
+          path: backend/sbom-backend.xml
+
+  frontend-security-scan:
+    name: Frontend Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      # Static Code Analysis
+      - name: ESLint Security Scan
+        working-directory: ./frontend
+        run: |
+          npx eslint src \
+            --config .eslintrc.json \
+            --max-warnings=0 \
+            --format json \
+            --output-file eslint-report.json || true
+      
+      - name: Upload ESLint results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: frontend-eslint-report
+          path: frontend/eslint-report.json
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          config-file: .github/codeql/codeql-config.yml
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      # Dependency Scanning
+      - name: Snyk Dependency & License Scan (Frontend)
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=frontend/package.json
+        continue-on-error: true
+
+      # SBOM Generation
+      - name: Generate Frontend SBOM
+        working-directory: ./frontend
+        run: |
+          npm install -g @cyclonedx/bom
+          npx @cyclonedx/bom -o sbom-frontend.xml
+      
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-sbom
+          path: frontend/sbom-frontend.xml
+
+# ============================================
+# STAGE 3: BUILD DOCKER IMAGES
+# ============================================
+  build-images:
+    name: Build Docker Images
+    needs: [backend-tests, frontend-tests, backend-security-scan, frontend-security-scan]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    outputs:
+      backend-image: ${{ steps.meta-backend.outputs.tags }}
+      frontend-image: ${{ steps.meta-frontend.outputs.tags }}
+      image-digest-backend: ${{ steps.build-backend.outputs.digest }}
+      image-digest-frontend: ${{ steps.build-frontend.outputs.digest }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       
       - name: Log in to Docker Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ secrets.DOCKER_REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      # Backend Image
+      - name: Extract backend metadata
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/backend
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
       
-      - name: Build and push Backend Docker image
-        uses: docker/build-push-action@v4
+      - name: Build and push backend image
+        id: build-backend
+        uses: docker/build-push-action@v5
         with:
           context: ./backend
           push: true
-          tags: |
-            ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/backend:latest
-            ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/backend:${{ github.sha }}
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/backend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/backend:buildcache,mode=max
       
-      - name: Build and push Frontend Docker image
-        uses: docker/build-push-action@v4
+      # Frontend Image
+      - name: Extract frontend metadata
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/frontend
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push frontend image
+        id: build-frontend
+        uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: |
-            ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/frontend:latest
-            ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/frontend:${{ github.sha }}
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/frontend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/frontend:buildcache,mode=max
 
+      # Image Vulnerability Scanning
+      - name: Scan Backend Image (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta-backend.outputs.tags }}
+          format: 'sarif'
+          output: 'trivy-backend.sarif'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+      
+      - name: Upload Trivy Backend results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-backend.sarif'
+      
+      - name: Scan Frontend Image (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta-frontend.outputs.tags }}
+          format: 'sarif'
+          output: 'trivy-frontend.sarif'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+      
+      - name: Upload Trivy Frontend results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-frontend.sarif'
+
+# ============================================
+# STAGE 4: DEPLOY TO DEVELOPMENT
+# ============================================
+  deploy-dev:
+    name: Deploy to Development
+    needs: build-images
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Deploy to Development
+        run: |
+          echo "Deploying to development environment..."
+          echo "Backend Image: ${{ needs.build-images.outputs.backend-image }}"
+          echo "Frontend Image: ${{ needs.build-images.outputs.frontend-image }}"
+          # Add your deployment commands here
+          # Example: kubectl set image deployment/backend backend=${{ needs.build-images.outputs.backend-image }}
+
+# ============================================
+# STAGE 5: DEPLOY TO STAGING & DAST
+# ============================================
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build-images
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Deploy to Staging (GitOps)
+        run: |
+          echo "Triggering GitOps deployment to staging..."
+          echo "Backend Image: ${{ needs.build-images.outputs.backend-image }}"
+          echo "Frontend Image: ${{ needs.build-images.outputs.frontend-image }}"
+          
+          # Update GitOps repository with new image tags
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+          # Clone the GitOps repo
+          git clone https://${{ secrets.WHEELOPS_TOKEN }}@github.com/mohamed99akram/wheelops.git
+          cd wheelops
+          
+          # Update backend image tag
+          if [ -f drwheels/backend-deployment.yaml ]; then
+            sed -i "s|image: .*/backend:.*|image: ${{ needs.build-images.outputs.backend-image }}|g" drwheels/backend-deployment.yaml
+          fi
+          
+          # Update frontend image tag
+          if [ -f drwheels/frontend-deployment.yaml ]; then
+            sed -i "s|image: .*/frontend:.*|image: ${{ needs.build-images.outputs.frontend-image }}|g" drwheels/frontend-deployment.yaml
+          fi
+          
+          # Commit and push changes to trigger GitOps
+          git add .
+          git commit -m "Update staging images to ${{ github.sha }}" || exit 0
+          git push || exit 0
+          
+          echo "GitOps deployment triggered. Waiting for Azure to deploy..."
+      
+      - name: Wait for GitOps deployment
+        run: |
+          echo "Waiting for Azure GitOps to complete deployment..."
+          echo "This may take 3-5 minutes for GitOps to sync and deploy..."
+          sleep 180  # Wait 3 minutes for GitOps to start
+      
+      - name: Wait for staging environment to be ready
+        env:
+          STAGING_URL: ${{ secrets.STAGING_ENVIRONMENT_URL || 'https://staging.drwheels.com' }}
+        run: |
+          echo "Checking if staging environment is ready..."
+          echo "Staging URL: $STAGING_URL"
+          
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          WAIT_TIME=10
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking staging health..."
+            
+            # Check backend health
+            if curl -f -s -m 5 "$STAGING_URL/api/health" > /dev/null 2>&1; then
+              echo "✅ Backend is ready!"
+              
+              # Check frontend health
+              if curl -f -s -m 5 "$STAGING_URL/health" > /dev/null 2>&1 || curl -f -s -m 5 "$STAGING_URL" > /dev/null 2>&1; then
+                echo "✅ Frontend is ready!"
+                echo "✅ Staging environment is fully deployed and ready for DAST scan"
+                exit 0
+              else
+                echo "⏳ Frontend not ready yet, waiting..."
+              fi
+            else
+              echo "⏳ Backend not ready yet, waiting..."
+            fi
+            
+            if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+              echo "Waiting ${WAIT_TIME} seconds before next attempt..."
+              sleep $WAIT_TIME
+            fi
+          done
+          
+          echo "⚠️ Warning: Staging environment may not be fully ready, but proceeding with DAST scan..."
+          echo "This could result in incomplete scan results."
+
+  dast-scan-staging:
+    name: DAST Scan (Staging)
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Verify staging environment is accessible
+        env:
+          STAGING_URL: ${{ secrets.STAGING_ENVIRONMENT_URL || 'https://staging.drwheels.com' }}
+        run: |
+          echo "Verifying staging environment is accessible before DAST scan..."
+          echo "Staging URL: $STAGING_URL"
+          
+          # Final health check before starting DAST
+          if curl -f -s -m 10 "$STAGING_URL/api/health" > /dev/null 2>&1; then
+            echo "✅ Backend is accessible"
+          else
+            echo "⚠️ Warning: Backend may not be fully ready"
+          fi
+          
+          if curl -f -s -m 10 "$STAGING_URL" > /dev/null 2>&1; then
+            echo "✅ Frontend is accessible"
+          else
+            echo "⚠️ Warning: Frontend may not be fully ready"
+          fi
+          
+          echo "Proceeding with DAST scan..."
+        continue-on-error: true
+      
+      - name: Install ZAP
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zaproxy python3-pip
+          pip3 install --user zapcli
+          export PATH=$PATH:~/.local/bin
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Start ZAP daemon
+        run: |
+          zaproxy -daemon -port 8090 -host 0.0.0.0 -config api.disablekey=true &
+          sleep 10
+          timeout 60 bash -c 'until zap-cli -p 8090 status -t 30; do sleep 2; done'
+      
+      - name: ZAP Baseline Scan (Staging)
+        env:
+          STAGING_URL: ${{ secrets.STAGING_ENVIRONMENT_URL || 'https://staging.drwheels.com' }}
+        run: |
+          export PATH=$PATH:~/.local/bin
+          
+          echo "Starting ZAP scan on $STAGING_URL"
+          
+          # Spider the application
+          zap-cli -p 8090 spider $STAGING_URL
+          sleep 10
+          
+          # Run active scan
+          zap-cli -p 8090 active-scan $STAGING_URL
+          sleep 30
+          
+          # Generate reports
+          zap-cli -p 8090 report -o zap-report.html -f html
+          zap-cli -p 8090 report -o zap-report.json -f json
+          zap-cli -p 8090 alerts -f json -l Medium > zap-alerts.json
+        continue-on-error: true
+      
+      - name: Upload ZAP reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: zap-dast-staging-reports
+          path: |
+            zap-report.html
+            zap-report.json
+            zap-alerts.json
+          retention-days: 30
+      
+      - name: Check for high/critical alerts
+        run: |
+          if [ -f zap-alerts.json ]; then
+            HIGH_CRITICAL=$(jq '[.[] | select(.risk == "High" or .risk == "Critical")] | length' zap-alerts.json)
+            if [ "$HIGH_CRITICAL" -gt 0 ]; then
+              echo "⚠️ Found $HIGH_CRITICAL high/critical security issues in staging"
+              jq '[.[] | select(.risk == "High" or .risk == "Critical")]' zap-alerts.json
+              exit 1
+            else
+              echo "✅ No high/critical security issues found in staging"
+            fi
+          fi
+        continue-on-error: true
+
+# ============================================
+# STAGE 6: DEPLOY TO PRODUCTION
+# ============================================
+  deploy-production:
+    name: Deploy to Production
+    needs: [build-images, deploy-staging, dast-scan-staging]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Deploy to Production
+        run: |
+          echo "Deploying to production environment..."
+          echo "Backend Image: ${{ needs.build-images.outputs.backend-image }}"
+          echo "Frontend Image: ${{ needs.build-images.outputs.frontend-image }}"
+          # Add your deployment commands here
+          # Example: kubectl set image deployment/backend backend=${{ needs.build-images.outputs.backend-image }}
+      
       - name: Update GitOps Repository
         run: |
           git config --global user.name "GitHub Actions"
@@ -116,18 +607,44 @@ jobs:
           cd wheelops
           
           # Update backend image tag
-          sed -i "s|image: .*/backend:.*|image: ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/backend:${{ github.sha }}|g" drwheels/backend-deployment.yaml
+          sed -i "s|image: .*/backend:.*|image: ${{ needs.build-images.outputs.backend-image }}|g" drwheels/backend-deployment.yaml
           
           # Update frontend image tag
-          sed -i "s|image: .*/frontend:.*|image: ${{ secrets.DOCKER_REGISTRY }}/devsecopscourse/drwheels/frontend:${{ github.sha }}|g" drwheels/frontend-deployment.yaml
+          sed -i "s|image: .*/frontend:.*|image: ${{ needs.build-images.outputs.frontend-image }}|g" drwheels/frontend-deployment.yaml
           
           # Commit and push changes
           git add .
-          git commit -m "Update images to ${{ github.sha }}"
-          git push
+          git commit -m "Update images to ${{ github.sha }}" || exit 0
+          git push || exit 0
+      
+      - name: Production Health Check
+        run: |
+          echo "Performing production health check..."
+          sleep 30
+          # Add health check here
+          # Example: curl -f ${{ secrets.PRODUCTION_ENVIRONMENT_URL }}/health || exit 1
 
-      # - name: Build Mobile
-      #   working-directory: ./mobile
-      #   run: |
-      #     flutter pub get
-      #     flutter build apk --release
+# ============================================
+# STAGE 7: POST-DEPLOYMENT MONITORING
+# ============================================
+  post-deployment-monitoring:
+    name: Post-Deployment Monitoring
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    environment:
+      name: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Run Smoke Tests
+        run: |
+          echo "Running smoke tests on production..."
+          # Add smoke tests here
+          # Example: npm run smoke-tests -- --url ${{ secrets.PRODUCTION_ENVIRONMENT_URL }}
+      
+      - name: Monitor Application
+        run: |
+          echo "Monitoring application health..."
+          # Add monitoring checks here

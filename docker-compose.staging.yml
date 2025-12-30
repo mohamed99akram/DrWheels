@@ -1,0 +1,75 @@
+version: '3.8'
+
+# Staging Docker Compose configuration
+# Usage: docker-compose -f docker-compose.staging.yml up -d
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: drwheels-mongodb-staging
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: drwheels
+    volumes:
+      - mongodb_staging_data:/data/db
+    networks:
+      - drwheels-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ${DOCKER_REGISTRY}/devsecopscourse/drwheels/backend:${IMAGE_TAG:-latest}
+    container_name: drwheels-backend-staging
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=staging
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017/drwheels}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE=${JWT_EXPIRE:-7d}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - PORT=4000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - drwheels-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    image: ${DOCKER_REGISTRY}/devsecopscourse/drwheels/frontend:${IMAGE_TAG:-latest}
+    container_name: drwheels-frontend-staging
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:4000/api}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - drwheels-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mongodb_staging_data:
+    driver: local
+
+networks:
+  drwheels-network:
+    driver: bridge
+

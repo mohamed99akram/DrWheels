@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import PropTypes from 'prop-types';
 import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { CircularProgress, Box } from '@mui/material';
@@ -15,6 +16,10 @@ const PrivateRoute = ({ children }) => {
   }
 
   return user ? children : <Navigate to="/login" />;
+};
+
+PrivateRoute.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export default PrivateRoute;

@@ -1,0 +1,28 @@
+name: "DrWheels CodeQL Config"
+
+# This configuration file specifies the queries to run for CodeQL analysis
+# For more information, see: https://docs.github.com/en/code-security/code-scanning/using-codeql-code-scanning-with-your-existing-ci-system/configuring-codeql-cli
+
+queries:
+  # Security queries
+  - uses: security-and-quality
+  # Additional security queries
+  - uses: security-extended
+
+paths:
+  - backend/
+  - frontend/src/
+
+paths-ignore:
+  - '**/node_modules'
+  - '**/tests'
+  - '**/__tests__'
+  - '**/coverage'
+  - '**/dist'
+  - '**/build'
+  - 'mobile/'
+  - '**/*.test.js'
+  - '**/*.spec.js'
+  - '**/setup.js'
+  - '**/jest.config.js'
+

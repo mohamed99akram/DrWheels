@@ -1,0 +1,92 @@
+version: '3.8'
+
+# Production Docker Compose configuration
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: drwheels-mongodb-prod
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: drwheels
+    volumes:
+      - mongodb_prod_data:/data/db
+    networks:
+      - drwheels-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Security: Don't expose ports in production (use internal network)
+    # ports:
+    #   - "27017:27017"
+
+  backend:
+    image: ${DOCKER_REGISTRY}/devsecopscourse/drwheels/backend:latest
+    container_name: drwheels-backend-prod
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE=${JWT_EXPIRE:-7d}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - PORT=4000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - drwheels-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Security: Limit resources
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  frontend:
+    image: ${DOCKER_REGISTRY}/devsecopscourse/drwheels/frontend:latest
+    container_name: drwheels-frontend-prod
+    restart: unless-stopped
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - drwheels-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Security: Limit resources
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+volumes:
+  mongodb_prod_data:
+    driver: local
+
+networks:
+  drwheels-network:
+    driver: bridge
+

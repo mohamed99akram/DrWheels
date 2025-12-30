@@ -9,7 +9,6 @@ import {
   Grid,
   Chip,
   Rating,
-  TextField,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -21,10 +20,14 @@ import {
   Divider,
   ImageList,
   ImageListItem,
+  Alert,
 } from '@mui/material';
 import { Favorite, FavoriteBorder, ArrowBack, ShoppingCart } from '@mui/icons-material';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
+import SecureInput from '../components/SecureInput';
+import { validateAndSanitize, validationSchemas, sanitizeInput } from '../utils/owaspValidator';
+import { checkRateLimit, rateLimits } from '../utils/rateLimiter';
 
 const CarDetail = () => {
   const { id } = useParams();
@@ -38,6 +41,9 @@ const CarDetail = () => {
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [orderNotes, setOrderNotes] = useState('');
+  const [reviewError, setReviewError] = useState('');
+  const [orderError, setOrderError] = useState('');
+  const [reviewFieldErrors, setReviewFieldErrors] = useState({});
 
   useEffect(() => {
     fetchCar();
@@ -96,25 +102,66 @@ const CarDetail = () => {
   };
 
   const handleCreateOrder = async () => {
+    setOrderError('');
+    
+    // Check rate limit
+    const rateLimit = checkRateLimit('create_order', rateLimits.form);
+    if (!rateLimit.allowed) {
+      setOrderError(`Too many submissions. Please wait ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.`);
+      return;
+    }
+
     try {
-      await api.post('/orders', { carId: id, notes: orderNotes });
+      // Validate order notes
+      const notesSchema = {
+        notes: {
+          required: false,
+          validate: (value) => !value || validationSchemas.car.description.validate(value),
+          sanitize: (value) => value ? sanitizeInput.text(value) : '',
+          default: ''
+        }
+      };
+      
+      const validation = validateAndSanitize({ notes: orderNotes }, notesSchema);
+
+      await api.post('/orders', { carId: id, notes: validation.sanitized.notes });
       setOrderDialogOpen(false);
-      alert('Order created successfully! Check your orders page.');
-      fetchCar(); // Refresh car status
+      setOrderNotes('');
+      setOrderError('');
+      fetchCar();
     } catch (error) {
-      alert(error.response?.data?.error || 'Error creating order');
+      setOrderError(error.response?.data?.error || error.message || 'Error creating order');
     }
   };
 
   const handleSubmitReview = async () => {
+    setReviewError('');
+    setReviewFieldErrors({});
+
+    // Check rate limit
+    const rateLimit = checkRateLimit('submit_review', rateLimits.form);
+    if (!rateLimit.allowed) {
+      setReviewError(`Too many submissions. Please wait ${Math.ceil((rateLimit.resetTime - Date.now()) / 1000)} seconds.`);
+      return;
+    }
+
+    // Validate and sanitize
+    const validation = validateAndSanitize(reviewForm, validationSchemas.review);
+    if (!validation.isValid) {
+      setReviewFieldErrors(validation.errors);
+      setReviewError('Please fix the errors below');
+      return;
+    }
+
     try {
-      await api.post(`/reviews/car/${id}`, reviewForm);
+      await api.post(`/reviews/car/${id}`, validation.sanitized);
       setReviewDialogOpen(false);
       setReviewForm({ rating: 5, comment: '' });
+      setReviewError('');
       fetchReviews();
-      fetchCar(); // Refresh car rating
+      fetchCar();
     } catch (error) {
-      alert(error.response?.data?.error || 'Error submitting review');
+      setReviewError(error.response?.data?.error || error.message || 'Error submitting review');
     }
   };
 
@@ -311,13 +358,22 @@ const CarDetail = () => {
               value={reviewForm.rating}
               onChange={(e, newValue) => setReviewForm({ ...reviewForm, rating: newValue })}
             />
-            <TextField
+            {reviewError && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {reviewError}
+              </Alert>
+            )}
+            <SecureInput
               fullWidth
               multiline
               rows={4}
+              name="comment"
               label="Comment"
               value={reviewForm.comment}
               onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+              schema={validationSchemas.review}
+              error={!!reviewFieldErrors.comment}
+              helperText={reviewFieldErrors.comment}
               sx={{ mt: 2 }}
             />
           </Box>
@@ -339,13 +395,27 @@ const CarDetail = () => {
             <Typography variant="h5" color="primary" gutterBottom>
               ${car.price.toLocaleString()}
             </Typography>
-            <TextField
+            {orderError && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {orderError}
+              </Alert>
+            )}
+            <SecureInput
               fullWidth
               multiline
               rows={4}
+              name="notes"
               label="Additional Notes (Optional)"
               value={orderNotes}
               onChange={(e) => setOrderNotes(e.target.value)}
+              schema={{
+                notes: {
+                  required: false,
+                  validate: (value) => !value || validationSchemas.car.description.validate(value),
+                  sanitize: (value) => value ? validationSchemas.car.description.sanitize(value) : '',
+                  default: ''
+                }
+              }}
               sx={{ mt: 2 }}
             />
           </Box>
