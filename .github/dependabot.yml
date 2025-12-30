@@ -8,8 +8,6 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 5
-    reviewers:
-      - "devops-team"
     labels:
       - "dependencies"
       - "backend"
@@ -29,8 +27,6 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 5
-    reviewers:
-      - "devops-team"
     labels:
       - "dependencies"
       - "frontend"
@@ -49,8 +45,6 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-    reviewers:
-      - "devops-team"
     labels:
       - "dependencies"
       - "docker"
@@ -61,8 +55,6 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-    reviewers:
-      - "devops-team"
     labels:
       - "dependencies"
       - "docker"
@@ -74,8 +66,6 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-    reviewers:
-      - "devops-team"
     labels:
       - "dependencies"
       - "github-actions"
