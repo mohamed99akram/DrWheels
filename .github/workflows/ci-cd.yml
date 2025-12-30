@@ -492,8 +492,9 @@ jobs:
       - name: Select image tags for staging deployment
         shell: bash
         run: |
-          echo "BACKEND_IMAGE_REF=${DOCKER_REGISTRY}/devsecopscourse/drwheels/backend:${GITHUB_REF_NAME}" >> $GITHUB_ENV
-          echo "FRONTEND_IMAGE_REF=${DOCKER_REGISTRY}/devsecopscourse/drwheels/frontend:${GITHUB_REF_NAME}" >> $GITHUB_ENV
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "BACKEND_IMAGE_REF=${DOCKER_REGISTRY}/devsecopscourse/drwheels/backend:${GITHUB_REF_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
+          echo "FRONTEND_IMAGE_REF=${DOCKER_REGISTRY}/devsecopscourse/drwheels/frontend:${GITHUB_REF_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
       
       - name: Deploy to Staging (GitOps)
         run: |
