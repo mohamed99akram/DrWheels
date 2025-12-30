@@ -510,18 +510,34 @@ jobs:
           
           # Update backend image tag
           if [ -f drwheels/backend-deployment.yaml ]; then
-            sed -i "s|image: .*/backend:.*|image: $BACKEND_IMAGE_REF|g" drwheels/backend-deployment.yaml
+            sed -i -E "s|image:\\s*.*\\/backend([:@]).*|image: $BACKEND_IMAGE_REF|g" drwheels/backend-deployment.yaml
+            echo "Updated backend deployment manifest:"
+            grep -n "image:" -n drwheels/backend-deployment.yaml | head -n 20 || true
+          else
+            echo "ERROR: wheelops/drwheels/backend-deployment.yaml not found"
+            exit 1
           fi
           
           # Update frontend image tag
           if [ -f drwheels/frontend-deployment.yaml ]; then
-            sed -i "s|image: .*/frontend:.*|image: $FRONTEND_IMAGE_REF|g" drwheels/frontend-deployment.yaml
+            sed -i -E "s|image:\\s*.*\\/frontend([:@]).*|image: $FRONTEND_IMAGE_REF|g" drwheels/frontend-deployment.yaml
+            echo "Updated frontend deployment manifest:"
+            grep -n "image:" -n drwheels/frontend-deployment.yaml | head -n 20 || true
+          else
+            echo "ERROR: wheelops/drwheels/frontend-deployment.yaml not found"
+            exit 1
           fi
           
           # Commit and push changes to trigger GitOps
-          git add .
-          git commit -m "Update staging images to ${{ github.sha }}" || exit 0
-          git push || exit 0
+          git add drwheels/backend-deployment.yaml drwheels/frontend-deployment.yaml
+
+          if git diff --cached --quiet; then
+            echo "No manifest changes detected after update; nothing to deploy."
+            exit 0
+          fi
+
+          git commit -m "Update staging images to ${{ github.sha }}"
+          git push
           
           echo "GitOps deployment triggered. Waiting for Azure to deploy..."
       

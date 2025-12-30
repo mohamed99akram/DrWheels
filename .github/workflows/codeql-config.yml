@@ -1,44 +1,15 @@
-name: "DrWheels CodeQL Config"
+name: CodeQL Config Placeholder
 
-# This configuration file specifies the queries to run for CodeQL analysis
-# For more information, see: https://docs.github.com/en/code-security/code-scanning/using-codeql-code-scanning-with-your-existing-ci-system/configuring-codeql-cli
+on:
+  workflow_dispatch:
 
-queries:
-  # Security queries
-  - uses: security-and-quality
-  # Additional security queries
-  - uses: security-extended
-  # Performance queries
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-079
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-089
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-094
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-116
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-209
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-352
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-434
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-601
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-614
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-643
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-730
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-754
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-776
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-798
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-807
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-835
-  - uses: security-and-quality/qlpacks/javascript/security/CWE-915
+permissions:
+  contents: read
 
-paths:
-  - backend/
-  - frontend/src/
-
-paths-ignore:
-  - '**/node_modules'
-  - '**/tests'
-  - '**/__tests__'
-  - '**/coverage'
-  - '**/dist'
-  - '**/build'
-  - 'mobile/'
-  - '**/*.test.js'
-  - '**/*.spec.js'
-
+jobs:
+  noop:
+    name: No-op
+    runs-on: ubuntu-latest
+    steps:
+      - name: No-op
+        run: echo "This file exists to avoid invalid workflow errors. Actual CodeQL config is in .github/codeql/codeql-config.yml"
