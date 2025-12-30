@@ -184,13 +184,13 @@ jobs:
           path: backend/eslint-report.json
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: javascript
           config-file: .github/codeql/codeql-config.yml
       
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
 
       # Dependency Scanning
       - name: Dependency & License Scan (Anchore)
@@ -278,13 +278,13 @@ jobs:
           path: frontend/eslint-report.json
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: javascript
           config-file: .github/codeql/codeql-config.yml
       
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
 
       # Dependency Scanning
       - name: Snyk Dependency & License Scan (Frontend)
@@ -390,7 +390,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload Trivy Backend results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-backend.sarif'
@@ -405,7 +405,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload Trivy Frontend results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-frontend.sarif'
