@@ -181,7 +181,7 @@ jobs:
             --output-file eslint-report.json || true
       
       - name: Upload ESLint results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: backend-eslint-report
@@ -200,7 +200,7 @@ jobs:
           output: codeql-results
 
       - name: Upload CodeQL results (SARIF)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: backend-codeql-sarif
@@ -258,7 +258,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload SBOM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: backend-sbom
           path: sbom-backend.xml
@@ -296,7 +296,7 @@ jobs:
             --output-file eslint-report.json || true
       
       - name: Upload ESLint results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: frontend-eslint-report
@@ -315,7 +315,7 @@ jobs:
           output: codeql-results
 
       - name: Upload CodeQL results (SARIF)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: frontend-codeql-sarif
@@ -341,7 +341,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload SBOM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: frontend-sbom
           path: sbom-frontend.xml
@@ -435,7 +435,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload Trivy Backend results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: trivy-backend-sarif
@@ -451,7 +451,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload Trivy Frontend results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: trivy-frontend-sarif
@@ -649,7 +649,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload ZAP reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: zap-dast-staging-reports
